@@ -60,7 +60,19 @@ func (m *model) Init() tea.Cmd {
 		tea.SetWindowTitle(title),
 		textinput.Blink, // Assuming textinput.Blink is a valid command
 		processCmdToTeaCmd(m.processBarModel.GetListenCmd()),
+		nextClockTickCmd(),
 	)
+}
+
+func nextClockTickCmd() tea.Cmd {
+	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
+	delay := time.Until(nextMinute)
+	if delay <= 0 {
+		delay = time.Minute
+	}
+	return tea.Tick(delay, func(time.Time) tea.Msg {
+		return clockTickMsg{}
+	})
 }
 
 // Update function for bubble tea to provide internal communication to the
@@ -70,7 +82,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var sidebarCmd, inputCmd, updateCmd, panelCmd,
 		metadataCmd, gitCmd, systemCmd, filePreviewCmd, helpMenuCmd, resizeCmd tea.Cmd
-	var windowTitleCmd tea.Cmd
+	var windowTitleCmd, clockCmd tea.Cmd
 
 	// These are above the key message handing to prevent issues with firstKeyInput
 	// if someone presses `/` to focus to searchBar, searchBar will otherwise
@@ -102,6 +114,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Debug("Got ModelUpdate message", "id", msg.GetReqID())
 		updateCmd = msg.ApplyToModel(m)
 	case metadataDebounceMsg:
+	case clockTickMsg:
+		clockCmd = nextClockTickCmd()
 
 	default:
 		slog.Debug("Message of type that is not explicitly handled")
@@ -122,7 +136,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	gitCmd = m.getGitInfoCmd()
 	systemCmd = m.getSystemInfoCmd()
 
-	return m, tea.Batch(windowTitleCmd, sidebarCmd, helpMenuCmd, inputCmd, updateCmd,
+	return m, tea.Batch(windowTitleCmd, clockCmd, sidebarCmd, helpMenuCmd, inputCmd, updateCmd,
 		panelCmd, metadataCmd, gitCmd, systemCmd, filePreviewCmd, resizeCmd)
 }
 

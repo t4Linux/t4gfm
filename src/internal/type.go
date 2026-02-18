@@ -125,3 +125,5 @@ const (
 type editorFinishedMsg struct{ err error }
 
 type metadataDebounceMsg struct{}
+
+type clockTickMsg struct{}
