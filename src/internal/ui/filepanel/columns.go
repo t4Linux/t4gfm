@@ -21,7 +21,10 @@ func (m *Model) renderFileName(indexElement int, columnWidth int) string {
 	// Calculate the actual prefix width for proper alignment
 	prefixWidth := ansi.StringWidth(cursor+" ") + ansi.StringWidth(selectBox)
 
-	isLink := elem.Info.Mode()&os.ModeSymlink != 0
+	isLink := false
+	if elem.Info != nil {
+		isLink = elem.Info.Mode()&os.ModeSymlink != 0
+	}
 	renderedName := common.FilePanelItemRenderWithIcon(
 		elem.Name,
 		columnWidth-prefixWidth,
@@ -97,8 +100,11 @@ func (m *Model) renderFileSize(indexElement int, columnWidth int) string {
 	elem := m.GetElementAtIdx(indexElement)
 	isSelected := m.CheckSelected(elem.Location)
 	isCursorRow := indexElement == m.GetCursor() && !m.SearchBar.Focused()
-	sizeValue := common.FormatFileSize(elem.Info.Size())
-	if elem.Info.IsDir() {
+	sizeValue := "-"
+	if elem.Info != nil {
+		sizeValue = common.FormatFileSize(elem.Info.Size())
+	}
+	if elem.Info != nil && elem.Info.IsDir() {
 		sizeValue = m.dirEntryCount[elem.Location]
 		if sizeValue == "" {
 			sizeValue = "-"
@@ -120,7 +126,10 @@ func (m *Model) renderModifyTime(indexElement int, columnWidth int) string {
 	elem := m.GetElementAtIdx(indexElement)
 	isSelected := m.CheckSelected(elem.Location)
 	isCursorRow := indexElement == m.GetCursor() && !m.SearchBar.Focused()
-	modifyTime := elem.Info.ModTime().Format("2006-01-02 15:04")
+	modifyTime := "-"
+	if elem.Info != nil {
+		modifyTime = elem.Info.ModTime().Format("2006-01-02 15:04")
+	}
 	return common.FilePanelItemRender(
 		modifyTime,
 		columnWidth,
@@ -135,8 +144,12 @@ func (m *Model) renderPermissions(indexElement int, columnWidth int) string {
 	elem := m.GetElementAtIdx(indexElement)
 	isSelected := m.CheckSelected(elem.Location)
 	isCursorRow := indexElement == m.GetCursor() && !m.SearchBar.Focused()
+	permissionValue := "-"
+	if elem.Info != nil {
+		permissionValue = elem.Info.Mode().Perm().String()
+	}
 	return common.FilePanelItemRender(
-		elem.Info.Mode().Perm().String(),
+		permissionValue,
 		columnWidth,
 		isSelected,
 		isCursorRow,

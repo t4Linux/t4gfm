@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/rkoesters/xdg/trash"
 	"github.com/t4Linux/t4gfm/src/internal/ui/processbar"
@@ -228,11 +231,64 @@ func moveToTrash(src string) error {
 		// separately outside of the this package. There is not documentation about this
 		// It also uses deprecated libraries, and isn't well maintained.
 		err = trash.Trash(src)
+		if err != nil && errors.Is(err, syscall.EXDEV) {
+			err = moveToTrashCrossFilesystem(src)
+		}
 	}
 	if err != nil {
 		slog.Error("Error while deleting single item, in function to move file to trash can", "error", err)
 	}
 	return err
+}
+
+func moveToTrashCrossFilesystem(src string) error {
+	absPath, err := filepath.Abs(src)
+	if err != nil {
+		return err
+	}
+
+	baseName := filepath.Base(src)
+	trashName := baseName
+	for i := 2; ; i++ {
+		filePath := filepath.Join(variable.LinuxTrashDirectoryFiles, trashName)
+		infoPath := filepath.Join(variable.LinuxTrashDirectoryInfo, trashName+".trashinfo")
+		if _, fileErr := os.Stat(filePath); !os.IsNotExist(fileErr) {
+			trashName = fmt.Sprintf("%s.%d", baseName, i)
+			continue
+		}
+		if _, infoErr := os.Stat(infoPath); !os.IsNotExist(infoErr) {
+			trashName = fmt.Sprintf("%s.%d", baseName, i)
+			continue
+		}
+		break
+	}
+
+	trashInfoPath := filepath.Join(variable.LinuxTrashDirectoryInfo, trashName+".trashinfo")
+	trashFilePath := filepath.Join(variable.LinuxTrashDirectoryFiles, trashName)
+	trashInfoContent := fmt.Sprintf("[Trash Info]\nPath=%s\nDeletionDate=%s\n",
+		escapeTrashInfoPath(absPath),
+		time.Now().Format("2006-01-02T15:04:05"),
+	)
+
+	if err = os.WriteFile(trashInfoPath, []byte(trashInfoContent), 0o644); err != nil {
+		return err
+	}
+
+	if err = moveElement(src, trashFilePath); err != nil {
+		_ = os.Remove(trashInfoPath)
+		return err
+	}
+
+	return nil
+}
+
+func escapeTrashInfoPath(path string) string {
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		escaped := url.QueryEscape(part)
+		parts[i] = strings.ReplaceAll(escaped, "+", "%20")
+	}
+	return strings.Join(parts, "/")
 }
 
 // pasteDir handles directory copying with progress tracking

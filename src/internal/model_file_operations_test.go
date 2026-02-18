@@ -216,7 +216,11 @@ func TestFileCreation(t *testing.T) {
 }
 
 func TestFileRename(t *testing.T) {
-	curTestDir := t.TempDir()
+	curTestDir, err := os.MkdirTemp(variable.HomeDir, "t4gfm-delete-test-")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = os.RemoveAll(curTestDir)
+	})
 	file1 := filepath.Join(curTestDir, "file1.txt")
 	file2 := filepath.Join(curTestDir, "file2.txt")
 	file3 := filepath.Join(curTestDir, "file3.txt")

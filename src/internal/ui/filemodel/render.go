@@ -3,11 +3,15 @@ package filemodel
 import "github.com/charmbracelet/lipgloss"
 
 func (m *Model) Render() string {
-	f := make([]string, m.PanelCount()+1)
+	panelCount := m.PanelCount()
+	f := make([]string, panelCount+1)
 	for i, filePanel := range m.FilePanels {
+		if i >= panelCount {
+			break
+		}
 		f[i] = filePanel.Render(filePanel.IsFocused)
 	}
-	f[m.PanelCount()] = m.GetFilePreviewRender()
+	f[panelCount] = m.GetFilePreviewRender()
 	return lipgloss.JoinHorizontal(lipgloss.Top, f...)
 }
 

@@ -219,7 +219,7 @@ func (m *model) validateComponentRender() error {
 			sidebarRender,
 			m.mainPanelHeight+common.BorderPadding,
 			common.Config.SidebarWidth+common.BorderPadding,
-			true,
+			false,
 		); err != nil {
 			return fmt.Errorf("sidebar render validation failed: %w", err)
 		}
@@ -247,8 +247,7 @@ func (m *model) validateComponentRender() error {
 		return fmt.Errorf("file model render validation failed: %w", err)
 	}
 
-	// Validate footer components if visible
-	if m.toggleFooter {
+	if m.toggleFooter && !m.compactFooter {
 		if err := validateRender(
 			m.systemPanelRender(),
 			m.systemPanel.GetHeight(),
@@ -294,7 +293,7 @@ func (m *model) validateFinalRender() error { //nolint:gocognit // cumilation of
 			endCol: m.sidebarModel.GetWidth() - 1,
 		}
 		// Note: This wont work when any overlay model is open
-		if err := m.validateComponentPlacement(lines, sidebarPos, true); err != nil {
+		if err := m.validateComponentPlacement(lines, sidebarPos, false); err != nil {
 			return fmt.Errorf("sidebar position validation failed: %w", err)
 		}
 	}
@@ -334,7 +333,7 @@ func (m *model) validateFinalRender() error { //nolint:gocognit // cumilation of
 		}
 	}
 
-	if m.toggleFooter {
+	if m.toggleFooter && !m.compactFooter {
 		systemPanelPos := compPosition{
 			stRow:  m.mainPanelHeight + common.BorderPadding,
 			stCol:  0,

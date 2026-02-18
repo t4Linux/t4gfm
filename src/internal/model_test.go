@@ -151,6 +151,10 @@ func TestQuit(t *testing.T) {
 	})
 	t.Run("Quit with running process", func(t *testing.T) {
 		m := defaultTestModel(testDir)
+		cancelHotkey := common.Hotkeys.CancelTyping[0]
+		if cancelHotkey == "ctrl+c" && len(common.Hotkeys.CancelTyping) > 1 && common.Hotkeys.CancelTyping[1] != "" {
+			cancelHotkey = common.Hotkeys.CancelTyping[1]
+		}
 		m.processBarModel.AddOrUpdateProcess(processbar.Process{
 			State: processbar.InOperation,
 			Done:  0,
@@ -165,7 +169,7 @@ func TestQuit(t *testing.T) {
 
 		// Now we would be asked for confirmation.
 		// Cancel the quit
-		cmd = TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.CancelTyping[0]))
+		cmd = TeaUpdate(m, utils.TeaRuneKeyMsg(cancelHotkey))
 		assert.Equal(t, notQuitting, m.modelQuitState)
 		assert.False(t, IsTeaQuit(cmd))
 

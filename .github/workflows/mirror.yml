@@ -1,11 +1,13 @@
-name: Mirror to Codeberg
+name: Mirror to Codeberg (disabled)
 permissions:
   contents: read
 
-on: [push]  # Trigger on push to ANY branch
+on:
+  workflow_dispatch:
 
 jobs:
   mirror:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

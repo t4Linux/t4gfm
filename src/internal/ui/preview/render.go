@@ -123,7 +123,7 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 		if !common.Config.TransparentBackground {
 			background = common.Theme.FilePanelBG
 		}
-		useBat := m.batCmd != "" && (common.Config.CodePreviewer == "bat" || common.Config.CodePreviewer == "")
+		useBat := m.batCmd != "" && common.Config.CodePreviewer == "bat"
 		if useBat {
 			fileContent, err = getBatSyntaxHighlightedContent(itemPath, previewHeight, background, m.batCmd)
 		} else {
@@ -174,14 +174,10 @@ func (m *Model) RenderWithPath(itemPath string, previewWidth int, previewHeight 
 	// Adjust dimensions if border is enabled
 	contentWidth := previewWidth
 	contentHeight := previewHeight
-	if previewWidth >= rendering.MinWidthForBorder && previewHeight >= rendering.MinHeightForBorder {
+	if common.Config.EnableFilePreviewBorder &&
+		previewWidth >= rendering.MinWidthForBorder && previewHeight >= rendering.MinHeightForBorder {
 		contentWidth = previewWidth - common.BorderPadding
 		contentHeight = previewHeight - common.BorderPadding
-	}
-
-	if contentHeight > 2 {
-		r.AddLines("", "")
-		contentHeight -= 2
 	}
 
 	lstatInfo, lstatErr := os.Lstat(itemPath)
