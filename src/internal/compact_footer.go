@@ -34,7 +34,7 @@ func (m *model) compactSelectionInfo() string {
 			sizeOrCount = strconv.Itoa(len(entries))
 		}
 	}
-	date := item.Info.ModTime().Format("2006-01-02 15:04")
+	date := item.Info.ModTime().Format("06-01-02 15:04")
 	return perm + " " + owner + " " + group + " " + sizeOrCount + " " + date
 }
 
@@ -66,14 +66,16 @@ func (m *model) compactGitInfo() string {
 	date := strings.TrimSpace(m.gitPanel.Date())
 	if len(date) >= 10 {
 		date = date[:10]
+		if len(date) == 10 {
+			date = date[2:]
+		}
 	}
 	commit := strings.TrimSpace(m.gitPanel.Subject())
 	if commit == "" {
 		commit = "-"
 	}
 	commit = ansi.Truncate(commit, 36, "...")
-	parts := []string{"[ git:" + branch + " ]", status}
-	parts = []string{"[ git: " + branch + " ]", status}
+	parts := []string{"(git: " + branch + ")", status}
 	if date != "" {
 		parts = append(parts, date)
 	}
