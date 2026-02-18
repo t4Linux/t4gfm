@@ -9,24 +9,31 @@ func (s *Model) ClickedDirectoryIndex(localY int, sidebarFocused bool) int {
 
 	sections := s.sectionBuckets()
 	listHeight, pinnedHeight, disksHeight := s.sectionHeights(sections, sidebarFocused)
+	listHeaderHeight, filesHeight := splitListPanelHeights(listHeight)
 
 	row := localY
-	if row < listHeight {
-		return s.clickedIndexInSection(row, listHeight, sections.list, true, sidebarFocused)
+	if listHeaderHeight > 0 {
+		if row < listHeaderHeight {
+			return -1
+		}
+		row -= listHeaderHeight
 	}
-	row -= listHeight
+	if row < filesHeight {
+		return s.clickedIndexInSection(row, filesHeight, sections.list, true)
+	}
+	row -= filesHeight
 	if row < pinnedHeight {
-		return s.clickedIndexInSection(row, pinnedHeight, sections.pinned, false, sidebarFocused)
+		return s.clickedIndexInSection(row, pinnedHeight, sections.pinned, false)
 	}
 	row -= pinnedHeight
 	if row < disksHeight {
-		return s.clickedIndexInSection(row, disksHeight, sections.disks, false, sidebarFocused)
+		return s.clickedIndexInSection(row, disksHeight, sections.disks, false)
 	}
 
 	return -1
 }
 
-func (s *Model) clickedIndexInSection(localY int, sectionHeight int, indexes []int, includeSearchBar bool, sidebarFocused bool) int {
+func (s *Model) clickedIndexInSection(localY int, sectionHeight int, indexes []int, includeSearchBar bool) int {
 	if localY <= 0 {
 		return -1
 	}
@@ -39,9 +46,6 @@ func (s *Model) clickedIndexInSection(localY int, sectionHeight int, indexes []i
 	usedLines := 0
 	if includeSearchBar {
 		usedLines += 2
-		if s.searchBar.Focused() || s.searchBar.Value() != "" || sidebarFocused {
-			usedLines++
-		}
 	}
 
 	if len(indexes) == 0 || usedLines >= maxContentLines {

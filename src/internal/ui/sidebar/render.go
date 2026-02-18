@@ -31,15 +31,36 @@ func (s *Model) Render(sidebarFocused bool, currentFilePanelLocation string) str
 	sections := s.sectionBuckets()
 	listFocused, pinnedFocused, disksFocused := s.sectionFocus(sidebarFocused, sections)
 	listHeight, pinnedHeight, disksHeight := s.sectionHeights(sections, sidebarFocused)
+	listHeaderHeight, filesHeight := splitListPanelHeights(listHeight)
 
-	listPanel := s.renderSectionPanel("List", listHeight, listFocused, sections.list,
+	listHeaderPanel := s.renderProgramBarPanel(listHeaderHeight, false)
+	listPanel := s.renderSectionPanel("Files", filesHeight, listFocused, sections.list,
 		currentFilePanelLocation, true, sidebarFocused)
 	pinnedPanel := s.renderSectionPanel("Pinned", pinnedHeight, pinnedFocused, sections.pinned,
 		currentFilePanelLocation, false, sidebarFocused)
 	disksPanel := s.renderSectionPanel("Disks", disksHeight, disksFocused, sections.disks,
 		currentFilePanelLocation, false, sidebarFocused)
 
-	return lipgloss.JoinVertical(0, listPanel, pinnedPanel, disksPanel)
+	return lipgloss.JoinVertical(0, listHeaderPanel, listPanel, pinnedPanel, disksPanel)
+}
+
+func splitListPanelHeights(listHeight int) (int, int) {
+	const headerHeight = 3
+	const minFilesHeight = 3
+
+	if listHeight >= headerHeight+minFilesHeight {
+		return headerHeight, listHeight - headerHeight
+	}
+	return 0, listHeight
+}
+
+func (s *Model) renderProgramBarPanel(height int, focused bool) string {
+	if height <= 0 {
+		return ""
+	}
+	r := ui.SidebarSectionRenderer(height, s.width, focused, "")
+	r.AddLines(common.FilePanelTopPathStyle.Render("t4gfm"))
+	return r.Render()
 }
 
 func (s *Model) sectionBuckets() sidebarSections {
@@ -153,15 +174,6 @@ func (s *Model) renderSectionPanel(title string, height int, focused bool, index
 	}
 
 	usedLines := 0
-	if includeSearchBar {
-		r.AddLines(s.listPanelTitle(curFilePanelFileLocation), "")
-		usedLines += 2
-		if s.searchBar.Focused() || s.searchBar.Value() != "" || sidebarFocused {
-			r.AddLines(s.searchBar.View())
-			usedLines++
-		}
-	}
-
 	if usedLines >= maxContentLines {
 		return r.Render()
 	}
@@ -206,8 +218,4 @@ func (s *Model) renderDirectoryItem(index int, curFilePanelFileLocation string,
 	}
 	line := common.FilePanelCursorStyle.Render(cursor+" ") + renderStyle.Render(s.directories[index].Name)
 	r.AddLineWithCustomTruncate(line, rendering.TailsTruncateRight)
-}
-
-func (s *Model) listPanelTitle(_ string) string {
-	return common.SidebarTitleStyle.Render(" t4gfm")
 }
