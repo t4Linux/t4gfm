@@ -235,6 +235,8 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 			panel.ItemSelectUp()
 		case slices.Contains(common.Hotkeys.FilePanelSelectModeItemsSelectDown, msg):
 			panel.ItemSelectDown()
+		case msg == "G":
+			m.moveCursorToBottom()
 		case slices.Contains(common.Hotkeys.DeleteItems, msg):
 			return m.getDeleteTriggerCmd(false)
 		case slices.Contains(common.Hotkeys.PermanentlyDeleteItems, msg):
@@ -460,6 +462,9 @@ func (m *model) moveCursorToTop() {
 		return
 	}
 	panel.SetCursorPosition(0)
+	if panel.IsVisualSelectMode() {
+		panel.EnsureVisualSelection()
+	}
 }
 
 func (m *model) moveCursorToBottom() {
@@ -468,6 +473,9 @@ func (m *model) moveCursorToBottom() {
 		return
 	}
 	panel.SetCursorPosition(panel.ElemCount() - 1)
+	if panel.IsVisualSelectMode() {
+		panel.EnsureVisualSelection()
+	}
 }
 
 func (m *model) handleGoPrefix(msg string) tea.Cmd {

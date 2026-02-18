@@ -16,6 +16,7 @@ import (
 
 	variable "github.com/t4Linux/t4gfm/src/config"
 	"github.com/t4Linux/t4gfm/src/internal/common"
+	"github.com/t4Linux/t4gfm/src/internal/ui/filepanel"
 	"github.com/t4Linux/t4gfm/src/internal/ui/processbar"
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
@@ -356,4 +357,33 @@ func TestAsyncPreviewPanelSync(t *testing.T) {
 	p.Send(tea.WindowSizeMsg{Width: 6 * DefaultTestModelWidth,
 		Height: 6 * DefaultTestModelHeight})
 	eventuallyEnsurePreviewContent(t, m, content1, "content should update to file1 after resize")
+}
+
+func TestVisualSelectVimStyleTopBottomNavigation(t *testing.T) {
+	curTestDir := t.TempDir()
+	utils.SetupFiles(t,
+		filepath.Join(curTestDir, "a.txt"),
+		filepath.Join(curTestDir, "b.txt"),
+		filepath.Join(curTestDir, "c.txt"),
+		filepath.Join(curTestDir, "d.txt"),
+	)
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	panel := m.getFocusedFilePanel()
+	panel.SetCursorPosition(2)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("V"))
+	require.True(t, panel.IsVisualSelectMode())
+	require.Equal(t, filepanel.SelectMode, panel.PanelMode)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("g"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("g"))
+	assert.Equal(t, 0, panel.GetCursor())
+	assert.EqualValues(t, 3, panel.SelectedCount())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("G"))
+	assert.Equal(t, panel.ElemCount()-1, panel.GetCursor())
+	assert.EqualValues(t, panel.ElemCount()-2, panel.SelectedCount())
 }
