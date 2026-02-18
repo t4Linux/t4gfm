@@ -154,13 +154,30 @@ func (m *model) paneTitle() string {
 
 func (m *model) handleMouseMsg(msg tea.MouseMsg) {
 	msgStr := msg.String()
-	if msgStr == "wheel up" || msgStr == "wheel down" {
+	if msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown {
+		if msg.Button == tea.MouseButtonWheelUp {
+			wheelMainAction("wheel up", m)
+		} else {
+			wheelMainAction("wheel down", m)
+		}
+	} else if msgStr == "wheel up" || msgStr == "wheel down" {
 		wheelMainAction(msgStr, m)
-	} else if (msg.Action == tea.MouseActionPress || msg.Action == tea.MouseActionRelease) && msg.Button == tea.MouseButtonLeft {
+	} else if isMouseLeftClick(msg) {
 		m.handleMouseLeftClick(msg.X, msg.Y)
 	} else {
 		slog.Debug("Mouse event of type that is not handled", "msg", msgStr)
 	}
+}
+
+func isMouseLeftClick(msg tea.MouseMsg) bool {
+	if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+		return true
+	}
+	if msg.Action == tea.MouseActionRelease &&
+		(msg.Button == tea.MouseButtonLeft || msg.Button == tea.MouseButtonNone) {
+		return true
+	}
+	return false
 }
 
 func (m *model) handleMouseLeftClick(x int, y int) {
