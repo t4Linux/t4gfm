@@ -200,6 +200,9 @@ func (s *Model) renderSectionPanel(title string, height int, focused bool, index
 		for start < len(indexes) && indexes[start] < s.renderIndex {
 			start++
 		}
+		if start >= len(indexes) {
+			start = max(0, len(indexes)-visibleLimit)
+		}
 	}
 	for i := start; i < len(indexes) && visibleLimit > 0; i++ {
 		s.renderDirectoryItem(indexes[i], curFilePanelFileLocation, sidebarFocused, r)
