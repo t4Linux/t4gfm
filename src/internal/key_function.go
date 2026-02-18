@@ -36,6 +36,8 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 			m.processBarModel.ListUp()
 		case metadataFocus:
 			m.fileMetaData.ListUp()
+		case gitPanelFocus:
+			m.gitPanel.ListUp()
 		case nonePanelFocus:
 			if m.getFocusedFilePanel().IsVisualSelectMode() {
 				m.getFocusedFilePanel().ItemSelectUp()
@@ -53,6 +55,8 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 			m.processBarModel.ListDown()
 		case metadataFocus:
 			m.fileMetaData.ListDown()
+		case gitPanelFocus:
+			m.gitPanel.ListDown()
 		case nonePanelFocus:
 			if m.getFocusedFilePanel().IsVisualSelectMode() {
 				m.getFocusedFilePanel().ItemSelectDown()
@@ -60,6 +64,12 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 				m.getFocusedFilePanel().ListDown()
 			}
 		}
+
+	case m.focusPanel == gitPanelFocus && msg == "H":
+		m.gitPanel.PrevTab()
+
+	case m.focusPanel == gitPanelFocus && msg == "L":
+		m.gitPanel.NextTab()
 
 	case slices.Contains(common.Hotkeys.PageUp, msg):
 		m.getFocusedFilePanel().PgUp()

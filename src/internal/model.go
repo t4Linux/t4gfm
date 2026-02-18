@@ -768,6 +768,7 @@ func (m *model) mainComponentsRender() string {
 	} else {
 		system := m.systemPanelRender()
 		metaData := m.fileMetaData.Render(m.focusPanel == metadataFocus)
+		m.gitPanel.SetClipboard(m.clipboard.GetItems(), m.clipboard.IsCut())
 		gitPanel := m.gitPanel.Render(m.focusPanel == gitPanelFocus)
 		footer = lipgloss.JoinHorizontal(0, system, metaData, gitPanel)
 	}

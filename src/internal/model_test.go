@@ -387,3 +387,36 @@ func TestVisualSelectVimStyleTopBottomNavigation(t *testing.T) {
 	assert.Equal(t, panel.ElemCount()-1, panel.GetCursor())
 	assert.EqualValues(t, panel.ElemCount()-2, panel.SelectedCount())
 }
+
+func TestGitPanelTabSwitchingHotkeys(t *testing.T) {
+	curTestDir := t.TempDir()
+	m := defaultTestModelWithFooterAndFilePreview(curTestDir)
+	TeaUpdate(m, nil)
+	m.focusOnGit()
+
+	assert.Equal(t, "git", m.gitPanel.ActiveTabName())
+	TeaUpdate(m, utils.TeaRuneKeyMsg("L"))
+	assert.Equal(t, "clipboard", m.gitPanel.ActiveTabName())
+	TeaUpdate(m, utils.TeaRuneKeyMsg("H"))
+	assert.Equal(t, "git", m.gitPanel.ActiveTabName())
+}
+
+func TestGitPanelClipboardTabScrollHotkeys(t *testing.T) {
+	curTestDir := t.TempDir()
+	fileA := filepath.Join(curTestDir, "a.txt")
+	fileB := filepath.Join(curTestDir, "b.txt")
+	utils.SetupFilesWithData(t, []byte("x"), fileA, fileB)
+
+	m := defaultTestModelWithFooterAndFilePreview(curTestDir)
+	TeaUpdate(m, nil)
+	m.focusOnGit()
+	m.gitPanel.SetClipboard([]string{fileA, fileB}, false)
+	m.gitPanel.NextTab()
+
+	out := ansi.Strip(m.gitPanel.Render(true))
+	assert.Contains(t, out, "1/2")
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("j"))
+	out = ansi.Strip(m.gitPanel.Render(true))
+	assert.Contains(t, out, "2/2")
+}

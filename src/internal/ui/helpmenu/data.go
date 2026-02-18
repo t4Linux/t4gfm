@@ -143,6 +143,11 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
+			hotkey:         []string{"H", "L"},
+			description:    "Switch Git/Clipboard tab (Git panel focus)",
+			hotkeyWorkType: globalType,
+		},
+		{
 			hotkey:         common.Hotkeys.MovePinnedItemUp,
 			description:    "Move pinned item up (sidebar focus)",
 			hotkeyWorkType: globalType,

@@ -27,6 +27,7 @@ Source: `src/t4gfm_config/hotkeys.toml`
 | focus_on_git | `ctrl+g` | - |
 | jump_to_pinned | `ctrl+p` | - |
 | jump_to_disks | `ctrl+d` | - |
+| git_panel_switch_tab | `H` | `L` (Git panel active) |
 | move_pinned_item_up | `K` | `shift+k` |
 | move_pinned_item_down | `J` | `shift+j` |
 | file_panel_item_create | `a` | - |
