@@ -3,6 +3,7 @@ package gitpanel
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
@@ -79,4 +80,47 @@ func TestClipboardTabScrollingSmallHeight(t *testing.T) {
 	m.ListDown()
 	out = ansi.Strip(m.Render(true))
 	assert.Contains(t, out, "b.txt")
+}
+
+func TestMultiLineFieldLinesWrapsAndTruncates(t *testing.T) {
+	lines := multiLineFieldLines("commit", "abcdefghijklmnopqrstuvwxyz", 18, 2)
+	assert.Len(t, lines, 2)
+	assert.True(t, strings.HasPrefix(lines[0], " commit: "))
+	assert.True(t, strings.HasPrefix(lines[1], "         "))
+	assert.Contains(t, lines[1], "...")
+}
+
+func TestGitTabRenderWrapsCommitAndStatus(t *testing.T) {
+	m := New()
+	m.SetDimensions(42, 10)
+	m.SetData(
+		"/tmp/repo",
+		"main",
+		"very-long-commit-subject-that-should-wrap-to-second-line",
+		"2026-02-18",
+		"donald",
+		"modified: file1, file2, file3, file4",
+	)
+	out := ansi.Strip(m.Render(true))
+	assert.Contains(t, out, " commit: very-long-commit-subject-th")
+	assert.Contains(t, out, "          -should-wrap-to-second-line")
+	assert.Contains(t, out, " status: modified: file1, file2, file")
+	assert.Contains(t, out, ", file4")
+}
+
+func TestGitTabRenderWrapsStatusToThreeLines(t *testing.T) {
+	m := New()
+	m.SetDimensions(38, 12)
+	m.SetData(
+		"/tmp/repo",
+		"main",
+		"short",
+		"2026-02-18",
+		"donald",
+		"status with many elements to force a third line in panel",
+	)
+	out := ansi.Strip(m.Render(true))
+	assert.Contains(t, out, " status: status with many elements")
+	assert.Contains(t, out, "to force a third line")
+	assert.Contains(t, out, "panel")
 }

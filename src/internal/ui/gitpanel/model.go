@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/ui"
 	"github.com/t4Linux/t4gfm/src/internal/ui/rendering"
@@ -161,11 +163,11 @@ func (m *Model) Render(focused bool) string {
 		return r.Render()
 	}
 
-	r.AddLines(" branch: " + common.TruncateText(m.branch, viewWidth-9, "..."))
-	r.AddLines(" commit: " + common.TruncateText(m.subject, viewWidth-9, "..."))
-	r.AddLines(" date: " + common.TruncateText(m.date, viewWidth-7, "..."))
-	r.AddLines(" author: " + common.TruncateText(m.author, viewWidth-9, "..."))
-	r.AddLines(" status: " + common.TruncateText(m.status, viewWidth-9, "..."))
+	r.AddLines(oneLineField("branch", m.branch, viewWidth))
+	r.AddLines(multiLineFieldLines("commit", m.subject, viewWidth, 2)...)
+	r.AddLines(oneLineField("date", m.date, viewWidth))
+	r.AddLines(oneLineField("author", m.author, viewWidth))
+	r.AddLines(multiLineFieldLines("status", m.status, viewWidth, 3)...)
 
 	if strings.TrimSpace(m.subject) == "" {
 		r.AddLines("", " No commit history")
@@ -212,4 +214,72 @@ func (m *Model) renderClipboardTab(r *rendering.Renderer, viewWidth int) {
 		isLink := fileInfo.Mode()&os.ModeSymlink != 0
 		r.AddLines(common.ClipboardPrettierName(m.cbItems[i], viewWidth, fileInfo.IsDir(), isLink, false))
 	}
+}
+
+func oneLineField(label string, value string, viewWidth int) string {
+	prefix := " " + label + ": "
+	avail := max(0, viewWidth-ansi.StringWidth(prefix))
+	return prefix + truncateWithEllipsis(value, avail)
+}
+
+func multiLineFieldLines(label string, value string, viewWidth int, maxLines int) []string {
+	if maxLines < 1 {
+		maxLines = 1
+	}
+	prefix := " " + label + ": "
+	availFirst := max(0, viewWidth-ansi.StringWidth(prefix))
+	first, rest := splitByDisplayWidth(value, availFirst)
+	continuationPrefix := strings.Repeat(" ", ansi.StringWidth(prefix))
+	availContinuation := max(0, viewWidth-ansi.StringWidth(continuationPrefix))
+
+	lines := []string{prefix + first}
+	remaining := rest
+	for i := 1; i < maxLines; i++ {
+		if remaining == "" {
+			break
+		}
+		if i == maxLines-1 {
+			lines = append(lines, continuationPrefix+truncateWithEllipsis(remaining, availContinuation))
+			break
+		}
+		part, next := splitByDisplayWidth(remaining, availContinuation)
+		lines = append(lines, continuationPrefix+part)
+		remaining = next
+	}
+
+	return lines
+}
+
+func truncateWithEllipsis(text string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return ""
+	}
+	if ansi.StringWidth(text) <= maxWidth {
+		return text
+	}
+	if maxWidth <= 3 {
+		return strings.Repeat(".", maxWidth)
+	}
+	head, _ := splitByDisplayWidth(text, maxWidth-3)
+	return head + "..."
+}
+
+func splitByDisplayWidth(text string, maxWidth int) (string, string) {
+	if maxWidth <= 0 || text == "" {
+		return "", text
+	}
+	curWidth := 0
+	splitIdx := len(text)
+	for idx, r := range text {
+		rWidth := ansi.StringWidth(string(r))
+		if curWidth+rWidth > maxWidth {
+			splitIdx = idx
+			break
+		}
+		curWidth += rWidth
+	}
+	if splitIdx == len(text) {
+		return text, ""
+	}
+	return text[:splitIdx], text[splitIdx:]
 }
