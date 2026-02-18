@@ -28,11 +28,25 @@ import (
 // Lots of improvements are waiting on it
 //   - Allow Sending thumbnailGeneratorNeeded as false to preview.New()
 //     to prevent noise in test logs. Same with imagePreviewer
-func defaultModelConfig(toggleDotFile, toggleFooter, firstUse bool,
-	firstPanelPaths []string, zClient *zoxidelib.Client) *model {
+func defaultModelConfig(toggleDotFile, toggleFooter, compactFooter, previewOpen, firstUse bool,
+	firstPanelPaths []string, focusedPanelIndex int, zClient *zoxidelib.Client) *model {
 	sidebarVisibleWidth := common.Config.SidebarWidth
 	if sidebarVisibleWidth == 0 {
 		sidebarVisibleWidth = 20
+	}
+
+	fileModelState := filemodel.New(firstPanelPaths, toggleDotFile)
+	if previewOpen {
+		fileModelState.FilePreview.Open()
+	} else {
+		fileModelState.FilePreview.Close()
+	}
+
+	if focusedPanelIndex > 0 && focusedPanelIndex < len(fileModelState.FilePanels) {
+		for i := range fileModelState.FilePanels {
+			fileModelState.FilePanels[i].IsFocused = i == focusedPanelIndex
+		}
+		fileModelState.FocusedPanelIndex = focusedPanelIndex
 	}
 
 	return &model{
@@ -42,7 +56,7 @@ func defaultModelConfig(toggleDotFile, toggleFooter, firstUse bool,
 		sidebarModel:        sidebar.New(),
 		fileMetaData:        metadata.New(),
 		gitPanel:            gitpanel.New(),
-		fileModel:           filemodel.New(firstPanelPaths, toggleDotFile),
+		fileModel:           fileModelState,
 		helpMenu:            helpmenu.New(),
 		promptModal:         prompt.DefaultModel(prompt.PromptMinHeight, prompt.PromptMinWidth),
 		zoxideModal:         zoxideui.DefaultModel(zoxideui.ZoxideMinHeight, zoxideui.ZoxideMinWidth, zClient),
@@ -52,6 +66,7 @@ func defaultModelConfig(toggleDotFile, toggleFooter, firstUse bool,
 		rangerMarks:         loadRangerMarks(),
 		sidebarVisibleWidth: sidebarVisibleWidth,
 		toggleFooter:        toggleFooter,
+		compactFooter:       compactFooter,
 		firstUse:            firstUse,
 		hasTrash:            common.InitTrash(),
 	}

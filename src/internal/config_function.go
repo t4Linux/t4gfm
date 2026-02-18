@@ -24,8 +24,9 @@ import (
 )
 
 // This is the only usecase of named returns, distinguish between multiple return values
-func initialConfig(firstPanelPaths []string) (toggleDotFile bool, //nolint: nonamedreturns // See above
-	toggleFooter bool, zClient *zoxidelib.Client) {
+func initialConfig(firstPanelPaths []string) (resolvedPanelPaths []string, //nolint: nonamedreturns // See above
+	toggleDotFile bool, toggleFooter bool, compactFooter bool, previewOpen bool,
+	focusedPanelIndex int, zClient *zoxidelib.Client) {
 	// Open log stream
 	file, err := os.OpenFile(variable.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, utils.LogFilePerm)
 
@@ -78,15 +79,41 @@ func initialConfig(firstPanelPaths []string) (toggleDotFile bool, //nolint: nona
 		}
 	}
 
-	updateFirstFilePanelPaths(firstPanelPaths, cwd, zClient)
+	resolvedPanelPaths = append([]string{}, firstPanelPaths...)
+	shouldRestorePanelSession := len(firstPanelPaths) == 1 && firstPanelPaths[0] == ""
+	if shouldRestorePanelSession {
+		sessionState, sessionErr := loadPanelSessionState()
+		if sessionErr != nil {
+			slog.Error("Failed loading panel session state", "error", sessionErr)
+		} else if sessionState != nil && len(sessionState.PanelPaths) > 0 {
+			resolvedPanelPaths = append([]string{}, sessionState.PanelPaths...)
+			previewOpen = sessionState.FilePreviewVisible
+			focusedPanelIndex = sessionState.FocusedPanelIndex
+		}
+	}
 
-	slog.Debug("Directory configuration", "cwd", cwd, "start_paths", firstPanelPaths)
+	updateFirstFilePanelPaths(resolvedPanelPaths, cwd, zClient)
+
+	slog.Debug("Directory configuration", "cwd", cwd, "start_paths", resolvedPanelPaths)
 	printRuntimeInfo()
 
 	toggleDotFile = utils.ReadBoolFile(variable.ToggleDotFile, false)
 	toggleFooter = utils.ReadBoolFile(variable.ToggleFooter, true)
+	compactFooter = utils.ReadBoolFile(variable.ToggleCompactFooter, false)
+	previewOpen = utils.ReadBoolFile(variable.ToggleFilePreview, common.Config.DefaultOpenFilePreview)
+	sidebarVisible := utils.ReadBoolFile(variable.ToggleSidebar, common.Config.SidebarWidth != 0)
+	if !toggleFooter {
+		compactFooter = false
+	}
+	if !sidebarVisible {
+		common.Config.SidebarWidth = 0
+	}
+	if focusedPanelIndex < 0 || focusedPanelIndex >= len(resolvedPanelPaths) {
+		focusedPanelIndex = 0
+	}
 
-	return toggleDotFile, toggleFooter, zClient
+	return resolvedPanelPaths, toggleDotFile, toggleFooter, compactFooter, previewOpen,
+		focusedPanelIndex, zClient
 }
 
 func updateFirstFilePanelPaths(firstPanelPaths []string, cwd string, zClient *zoxidelib.Client) {

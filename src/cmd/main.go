@@ -187,8 +187,15 @@ func InitConfigFile() {
 		variable.LogFile,
 		variable.ThemeFileVersion,
 		variable.ToggleFooter,
+		variable.ToggleCompactFooter,
+		variable.ToggleSidebar,
+		variable.ToggleFilePreview,
 	); err != nil {
 		utils.PrintlnAndExit("Error creating files:", err)
+	}
+
+	if err := utils.InitJSONFile(variable.PanelSessionFile); err != nil {
+		utils.PrintlnAndExit("Error creating panel session file:", err)
 	}
 
 	// Write config file

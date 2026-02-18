@@ -228,6 +228,10 @@ func (m *model) toggleFooterController() tea.Cmd {
 	if err != nil {
 		slog.Error("Error while updating toggleFooter data", "error", err)
 	}
+	err = utils.WriteBoolFile(variable.ToggleCompactFooter, m.compactFooter)
+	if err != nil {
+		slog.Error("Error while updating compact footer data", "error", err)
+	}
 	m.setHeightValues()
 	return m.updateComponentDimensions()
 }

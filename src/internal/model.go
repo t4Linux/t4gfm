@@ -43,8 +43,10 @@ const metadataDebounceInterval = 120 * time.Millisecond
 // Either way type 'model' is not exported, so there is not way main package can
 // be aware of it, and use it directly
 func InitialModel(firstPanelPaths []string, firstUseCheck bool) tea.Model {
-	toggleDotFile, toggleFooter, zClient := initialConfig(firstPanelPaths)
-	return defaultModelConfig(toggleDotFile, toggleFooter, firstUseCheck, firstPanelPaths, zClient)
+	panelPaths, toggleDotFile, toggleFooter, compactFooter, previewOpen,
+		focusedPanelIndex, zClient := initialConfig(firstPanelPaths)
+	return defaultModelConfig(toggleDotFile, toggleFooter, compactFooter, previewOpen,
+		firstUseCheck, panelPaths, focusedPanelIndex, zClient)
 }
 
 // cursos blinking and starts message streamming channel
@@ -595,12 +597,20 @@ func (m *model) applyShellCommandAction(shellCommand string) {
 }
 
 func (m *model) splitPanel() (tea.Cmd, error) {
-	return m.fileModel.CreateNewFilePanel(m.getFocusedFilePanel().Location)
+	cmd, err := m.fileModel.CreateNewFilePanel(m.getFocusedFilePanel().Location)
+	if err == nil {
+		m.persistUIState()
+	}
+	return cmd, err
 }
 
 func (m *model) createNewFilePanelRelativeToCurrent(path string) (tea.Cmd, error) {
 	currentDir := m.getFocusedFilePanel().Location
-	return m.fileModel.CreateNewFilePanel(utils.ResolveAbsPath(currentDir, path))
+	cmd, err := m.fileModel.CreateNewFilePanel(utils.ResolveAbsPath(currentDir, path))
+	if err == nil {
+		m.persistUIState()
+	}
+	return cmd, err
 }
 
 // simulates a 'cd' action
@@ -610,6 +620,7 @@ func (m *model) updateCurrentFilePanelDir(path string) error {
 	if err == nil {
 		// Track the directory change with zoxide
 		m.trackDirectoryWithZoxide(panel.Location)
+		m.savePanelSessionState()
 	}
 	return err
 }
@@ -751,6 +762,7 @@ func (m *model) quitSuperfile(cdOnQuit bool) {
 	if common.Config.Metadata && et != nil {
 		_ = et.Close()
 	}
+	m.persistUIState()
 	m.fileModel.FilePreview.CleanUp()
 
 	// cd on quit

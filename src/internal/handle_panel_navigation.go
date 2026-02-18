@@ -5,8 +5,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	variable "github.com/t4Linux/t4gfm/src/config"
 	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/ui/sidebar"
+	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
 
 // Pinned directory
@@ -49,6 +51,10 @@ func (m *model) toggleSidebarController() tea.Cmd {
 			m.focusPanel = nonePanelFocus
 			m.getFocusedFilePanel().IsFocused = true
 		}
+	}
+	err := utils.WriteBoolFile(variable.ToggleSidebar, common.Config.SidebarWidth != 0)
+	if err != nil {
+		slog.Error("Error while updating toggleSidebar data", "error", err)
 	}
 	return m.updateComponentDimensions()
 }

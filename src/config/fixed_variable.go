@@ -41,13 +41,17 @@ var (
 	ThemeFolder = filepath.Join(AppMainDir, "theme")
 
 	// DataDir files
-	LastCheckVersion = filepath.Join(AppDataDir, "lastCheckVersion")
-	ThemeFileVersion = filepath.Join(AppDataDir, "themeFileVersion")
-	FirstUseCheck    = filepath.Join(AppDataDir, "firstUseCheck")
-	PinnedFile       = filepath.Join(AppDataDir, "pinned.json")
-	RangerMarksFile  = filepath.Join(AppDataDir, "ranger_marks.json")
-	ToggleDotFile    = filepath.Join(AppDataDir, "toggleDotFile")
-	ToggleFooter     = filepath.Join(AppDataDir, "toggleFooter")
+	LastCheckVersion    = filepath.Join(AppDataDir, "lastCheckVersion")
+	ThemeFileVersion    = filepath.Join(AppDataDir, "themeFileVersion")
+	FirstUseCheck       = filepath.Join(AppDataDir, "firstUseCheck")
+	PinnedFile          = filepath.Join(AppDataDir, "pinned.json")
+	RangerMarksFile     = filepath.Join(AppDataDir, "ranger_marks.json")
+	ToggleDotFile       = filepath.Join(AppDataDir, "toggleDotFile")
+	ToggleFooter        = filepath.Join(AppDataDir, "toggleFooter")
+	ToggleCompactFooter = filepath.Join(AppDataDir, "toggleCompactFooter")
+	ToggleSidebar       = filepath.Join(AppDataDir, "toggleSidebar")
+	ToggleFilePreview   = filepath.Join(AppDataDir, "toggleFilePreview")
+	PanelSessionFile    = filepath.Join(AppDataDir, "panelSession.json")
 
 	// StateDir files
 	LogFile     = filepath.Join(AppStateDir, "t4gfm.log")

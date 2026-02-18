@@ -99,16 +99,22 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 		cmd, err := m.fileModel.CloseFilePanel()
 		if err != nil && !errors.Is(err, filemodel.ErrMinimumPanelCount) {
 			slog.Error("unexpected error while closing new panel", "error", err)
+		} else if err == nil {
+			m.persistUIState()
 		}
 		return cmd
 	case slices.Contains(common.Hotkeys.CreateNewFilePanel, msg):
 		cmd, err := m.fileModel.CreateNewFilePanel(variable.HomeDir)
 		if err != nil && !errors.Is(err, filemodel.ErrMaximumPanelCount) {
 			slog.Error("unexpected error while creating new panel", "error", err)
+		} else if err == nil {
+			m.persistUIState()
 		}
 		return cmd
 	case slices.Contains(common.Hotkeys.ToggleFilePreviewPanel, msg):
-		return m.fileModel.ToggleFilePreviewPanel()
+		cmd := m.fileModel.ToggleFilePreviewPanel()
+		m.persistUIState()
+		return cmd
 
 	case slices.Contains(common.Hotkeys.FocusOnSidebar, msg):
 		m.focusOnSideBar()

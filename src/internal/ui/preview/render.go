@@ -44,7 +44,17 @@ func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeigh
 		return files[i].Name() < files[j].Name()
 	})
 
-	for i := 0; i < previewHeight && i < len(files); i++ {
+	contentOffset := 0
+	if previewHeight > 4 {
+		contentOffset = 3
+		r.AddLines("", "", "")
+	}
+
+	maxRows := previewHeight - contentOffset - 2
+	if maxRows < 0 {
+		maxRows = 0
+	}
+	for i := 0; i < maxRows && i < len(files); i++ {
 		file := files[i]
 		isLink := false
 		if info, err := file.Info(); err == nil {
