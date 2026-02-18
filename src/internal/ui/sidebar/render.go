@@ -1,11 +1,7 @@
 package sidebar
 
 import (
-	"path/filepath"
-
 	"github.com/charmbracelet/lipgloss"
-
-	"github.com/t4Linux/t4gfm/src/config/icon"
 
 	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/ui"
@@ -212,18 +208,6 @@ func (s *Model) renderDirectoryItem(index int, curFilePanelFileLocation string,
 	r.AddLineWithCustomTruncate(line, rendering.TailsTruncateRight)
 }
 
-func (s *Model) listPanelTitle(currentFilePanelLocation string) string {
-	location := filepath.Clean(currentFilePanelLocation)
-	listDirectory := filepath.Dir(location)
-	aboveListDirectory := filepath.Dir(listDirectory)
-
-	name := filepath.Base(aboveListDirectory)
-	if name == "." || name == string(filepath.Separator) || name == "" {
-		name = aboveListDirectory
-	}
-	if name == "" {
-		name = string(filepath.Separator)
-	}
-
-	return common.SidebarTitleStyle.Render(" " + icon.Directory + icon.Space + name)
+func (s *Model) listPanelTitle(_ string) string {
+	return common.SidebarTitleStyle.Render(" t4gfm")
 }
