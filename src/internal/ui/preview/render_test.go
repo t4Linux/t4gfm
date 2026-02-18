@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
 
@@ -140,6 +141,18 @@ func TestFilePreviewRenderWithDimensions(t *testing.T) {
 				"          \n" +
 				"          ",
 		},
+		{
+			name: "Extensionless text file",
+			fileContent: "" +
+				"line-1\n" +
+				"line-2",
+			fileName: "README",
+			height:   2,
+			width:    6,
+			expectedPreview: "" +
+				"line-1\n" +
+				"line-2",
+		},
 	}
 
 	for i, tt := range testdata {
@@ -156,4 +169,22 @@ func TestFilePreviewRenderWithDimensions(t *testing.T) {
 			assert.Equal(t, tt.expectedPreview, res, "filePath = %s", filePath)
 		})
 	}
+}
+
+func TestFilePreviewHighlightFailureFallback(t *testing.T) {
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "sample.go")
+	require.NoError(t, os.WriteFile(filePath, []byte("package main\n"), 0o644))
+
+	oldPreviewer := common.Config.CodePreviewer
+	common.Config.CodePreviewer = "bat"
+	t.Cleanup(func() {
+		common.Config.CodePreviewer = oldPreviewer
+	})
+
+	m := New()
+	m.batCmd = "__missing_bat_binary__"
+	out := ansi.Strip(m.RenderWithPath(filePath, 40, 5, 40))
+
+	assert.Contains(t, out, "package main")
 }

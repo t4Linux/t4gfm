@@ -209,6 +209,14 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 		if m.focusPanel == sidebarFocus && slices.Contains(common.Hotkeys.Confirm, msg) {
 			m.sidebarSelectDirectory()
 		}
+		if m.focusPanel == sidebarFocus && (msg == "K" || slices.Contains(common.Hotkeys.MovePinnedItemUp, msg)) {
+			m.sidebarModel.MoveCurrentPinned(-1, m.getFocusedFilePanel().Location)
+			return nil
+		}
+		if m.focusPanel == sidebarFocus && (msg == "J" || slices.Contains(common.Hotkeys.MovePinnedItemDown, msg)) {
+			m.sidebarModel.MoveCurrentPinned(1, m.getFocusedFilePanel().Location)
+			return nil
+		}
 		if m.focusPanel == sidebarFocus && slices.Contains(common.Hotkeys.FilePanelItemRename, msg) {
 			m.sidebarModel.PinnedItemRename()
 		}

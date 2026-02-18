@@ -127,6 +127,37 @@ func (s *Model) TogglePinnedDirectory(dir string) error {
 	return err
 }
 
+// MoveCurrentPinned reorders currently selected pinned directory by delta.
+func (s *Model) MoveCurrentPinned(delta int, currentLocation string) bool {
+	pinnedBegin, pinnedEnd := s.pinnedIndexRange()
+	if s.cursor < pinnedBegin || s.cursor > pinnedEnd {
+		return false
+	}
+
+	selectedLocation := s.directories[s.cursor].Location
+	moved, err := s.pinnedMgr.Move(selectedLocation, delta)
+	if err != nil {
+		slog.Error("error reordering pinned directories", "error", err)
+		return false
+	}
+	if !moved {
+		return false
+	}
+
+	s.lastUpdate = time.Time{}
+	s.UpdateDirectories(currentLocation)
+
+	for i := range s.directories {
+		if s.directories[i].Location == selectedLocation {
+			s.cursor = i
+			s.updateRenderIndex()
+			break
+		}
+	}
+
+	return true
+}
+
 // New initializes and returns a new Model for the sidebar correctly set up with configuration.
 func New() Model {
 	if common.Config.SidebarWidth == 0 {

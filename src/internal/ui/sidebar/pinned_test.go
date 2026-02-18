@@ -288,3 +288,53 @@ func Test_Clean(t *testing.T) {
 		})
 	}
 }
+
+func Test_Move(t *testing.T) {
+	tempDir := t.TempDir()
+	pinnedDir := filepath.Join(tempDir, "pinnedDir")
+	utils.SetupDirectories(t, pinnedDir)
+
+	dirA := filepath.Join(tempDir, "a")
+	dirB := filepath.Join(tempDir, "b")
+	dirC := filepath.Join(tempDir, "c")
+	utils.SetupDirectories(t, dirA, dirB, dirC)
+
+	pinnedFile := filepath.Join(pinnedDir, "pinned.json")
+	mgr := PinnedManager{filePath: pinnedFile}
+	require.NoError(t, mgr.Save([]directory{
+		{Location: dirA, Name: "a"},
+		{Location: dirB, Name: "b"},
+		{Location: dirC, Name: "c"},
+	}))
+
+	moved, err := mgr.Move(dirB, -1)
+	require.NoError(t, err)
+	require.True(t, moved)
+	assert.Equal(t, []string{dirB, dirA, dirC}, []string{
+		mgr.Load()[0].Location,
+		mgr.Load()[1].Location,
+		mgr.Load()[2].Location,
+	})
+
+	moved, err = mgr.Move(dirB, -1)
+	require.NoError(t, err)
+	assert.False(t, moved)
+	assert.Equal(t, []string{dirB, dirA, dirC}, []string{
+		mgr.Load()[0].Location,
+		mgr.Load()[1].Location,
+		mgr.Load()[2].Location,
+	})
+
+	moved, err = mgr.Move(dirB, 1)
+	require.NoError(t, err)
+	assert.True(t, moved)
+	assert.Equal(t, []string{dirA, dirB, dirC}, []string{
+		mgr.Load()[0].Location,
+		mgr.Load()[1].Location,
+		mgr.Load()[2].Location,
+	})
+
+	moved, err = mgr.Move(filepath.Join(tempDir, "missing"), 1)
+	require.NoError(t, err)
+	assert.False(t, moved)
+}

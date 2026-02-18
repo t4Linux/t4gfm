@@ -87,6 +87,36 @@ func (mgr *PinnedManager) Toggle(dir string) error {
 	return nil
 }
 
+func (mgr *PinnedManager) Move(dir string, delta int) (bool, error) {
+	if delta == 0 {
+		return false, nil
+	}
+
+	dirs := mgr.Load()
+	idx := -1
+	for i := range dirs {
+		if dirs[i].Location == dir {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		return false, nil
+	}
+
+	target := idx + delta
+	if target < 0 || target >= len(dirs) {
+		return false, nil
+	}
+
+	dirs[idx], dirs[target] = dirs[target], dirs[idx]
+	if err := mgr.Save(dirs); err != nil {
+		return false, fmt.Errorf("error saving reordered pinned directories: %w", err)
+	}
+
+	return true, nil
+}
+
 // Clean removes non-existing directories and optionally saves the updated list
 func (mgr *PinnedManager) Clean(dirs []directory) []directory {
 	cleanedDirs := make([]directory, 0, len(dirs))

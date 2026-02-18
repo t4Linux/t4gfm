@@ -9,8 +9,6 @@ import (
 const MaxSafeOpenFileSize = int64(300 * 1024 * 1024)
 
 var BlockedOpenFileSuffixes = []string{
-	".qcow2",
-	".qcow2.bak",
 	".vmdk",
 	".vdi",
 	".img",
@@ -47,6 +45,14 @@ func OpenBlockReason(filePath string) string {
 	}
 
 	lower := strings.ToLower(resolvedPath)
+	baseLower := strings.ToLower(filepath.Base(resolvedPath))
+	qcow2Idx := strings.LastIndex(baseLower, ".qcow2")
+	if qcow2Idx != -1 {
+		tail := baseLower[qcow2Idx+len(".qcow2"):]
+		if tail == "" || strings.HasPrefix(tail, ".") {
+			return "blocked file type: .qcow2*"
+		}
+	}
 	for _, suffix := range BlockedOpenFileSuffixes {
 		if strings.HasSuffix(lower, suffix) {
 			return "blocked file type: " + suffix
@@ -60,11 +66,6 @@ func OpenBlockReason(filePath string) string {
 
 	if info.Size() > MaxSafeOpenFileSize {
 		return "file is larger than 300M"
-	}
-
-	isText, textErr := IsTextFile(resolvedPath)
-	if textErr == nil && !isText {
-		return "binary file detected"
 	}
 
 	return ""

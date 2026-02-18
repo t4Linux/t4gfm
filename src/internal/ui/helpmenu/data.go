@@ -143,6 +143,16 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
+			hotkey:         common.Hotkeys.MovePinnedItemUp,
+			description:    "Move pinned item up (sidebar focus)",
+			hotkeyWorkType: globalType,
+		},
+		{
+			hotkey:         common.Hotkeys.MovePinnedItemDown,
+			description:    "Move pinned item down (sidebar focus)",
+			hotkeyWorkType: globalType,
+		},
+		{
 			hotkey:         common.Hotkeys.FocusOnMetaData,
 			description:    "Focus on the metadata panel",
 			hotkeyWorkType: globalType,

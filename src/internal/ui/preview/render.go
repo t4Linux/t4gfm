@@ -108,13 +108,13 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 	previewWidth, previewHeight int,
 ) string {
 	format := lexers.Match(filepath.Base(itemPath))
+	isText := true
 	if format == nil {
-		isText, err := common.IsTextFile(itemPath)
+		var err error
+		isText, err = common.IsTextFile(itemPath)
 		if err != nil {
 			slog.Error("Error while checking text file", "error", err)
 			return r.AddLines(common.FilePreviewError).Render()
-		} else if !isText && !isTextConfigPath(itemPath) {
-			return r.AddLines(common.FilePreviewUnsupportedFormatText).Render()
 		}
 	}
 
@@ -125,10 +125,14 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 	}
 
 	if fileContent == "" {
+		if format == nil && !isText && !isTextConfigPath(itemPath) {
+			return r.AddLines(common.FilePreviewUnsupportedFormatText).Render()
+		}
 		return r.AddLines(common.FilePreviewEmptyText).Render()
 	}
 
 	if format != nil {
+		rawContent := fileContent
 		background := ""
 		if !common.Config.TransparentBackground {
 			background = common.Theme.FilePanelBG
@@ -136,13 +140,20 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 		useBat := m.batCmd != "" && common.Config.CodePreviewer == "bat"
 		if useBat {
 			fileContent, err = getBatSyntaxHighlightedContent(itemPath, previewHeight, background, m.batCmd)
+			if err != nil {
+				fileContent, err = ansichroma.HightlightString(rawContent, format.Config().Name,
+					common.Theme.CodeSyntaxHighlightTheme, background)
+			}
 		} else {
-			fileContent, err = ansichroma.HightlightString(fileContent, format.Config().Name,
+			fileContent, err = ansichroma.HightlightString(rawContent, format.Config().Name,
 				common.Theme.CodeSyntaxHighlightTheme, background)
+			if err != nil && m.batCmd != "" && common.Config.CodePreviewer == "" {
+				fileContent, err = getBatSyntaxHighlightedContent(itemPath, previewHeight, background, m.batCmd)
+			}
 		}
 		if err != nil {
-			slog.Error("Error render code highlight", "error", err)
-			return r.AddLines(common.FilePreviewError).Render()
+			slog.Warn("Falling back to plain text preview due highlighting error", "error", err)
+			fileContent = rawContent
 		}
 	}
 
