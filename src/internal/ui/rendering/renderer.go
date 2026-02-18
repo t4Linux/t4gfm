@@ -1,0 +1,161 @@
+package rendering
+
+import (
+	"errors"
+	"fmt"
+	"math/rand/v2"
+	"strconv"
+
+	"github.com/charmbracelet/lipgloss"
+)
+
+type StyleModifier func(lipgloss.Style) lipgloss.Style
+
+// For now we are not allowing to add/update/remove lines to previous sections
+// We may allow that later.
+// Also we could have functions about getting sections count, line count, adding updating a
+// specific line in a specific section, and adjusting section sizes. But not needed now.
+// TODO: zero value of Renderer - `Renderer{}` is unusable,
+// It will cause panic on AddLines(), completely eliminate usage of zero values
+// in the code.
+type Renderer struct {
+
+	// Current sectionization will not allow to predefine section
+	// but only allow adding them via AddSection(). Hence trucateWill be applicable to
+	// last section only.
+	contentSections []ContentRenderer
+
+	// Empty for last section . len(sectionDividers) should be equal to len(contentSections) - 1
+	sectionDividers []string
+	curSectionIdx   int
+	// Including Dividers - Count of actual lines that were added. It maybe <= totalHeight - 2
+	actualContentHeight int
+	defTruncateStyle    TruncateStyle
+
+	// Whether to reduce rendered height to fit number of lines
+	truncateHeight bool
+
+	border BorderConfig
+
+	// Should this go in contentRenderer - No . ContentRenderer is not for storing style configs
+	contentFGColor lipgloss.TerminalColor
+	contentBGColor lipgloss.TerminalColor
+
+	// Should this go in borderConfig ?
+	borderFGColor lipgloss.TerminalColor
+	borderBGColor lipgloss.TerminalColor
+
+	// Use this to add additional style modifications
+	// This is applied before any style update that are defined by other configurations,
+	// like border, height, width. Hence if conflicting styles are used, they can get
+	// overridden
+	styleModifiers []StyleModifier
+
+	// Maybe better rename these to maxHeight
+	// Final rendered string should have exactly this many lines, including borders
+	// But if truncateHeight is true, it maybe be <= totalHeight
+	totalHeight int
+	// Every line should have at most this many characters, including borders
+	totalWidth int
+
+	contentHeight int
+	contentWidth  int
+
+	// Note: Must pass non empty borderStrings if borderRequired is set as true
+	// TODO: Have ansi.StringWidth checks in `ValidateConfig`
+	// If you silently pass empty border, rendering will be unexpectd and,
+	// it might take some time to RCA.
+	borderRequired bool
+	borderStrings  lipgloss.Border
+	// for logging
+	name string
+}
+
+type RendererConfig struct {
+	TotalHeight int
+	TotalWidth  int
+
+	DefTruncateStyle TruncateStyle
+	TruncateHeight   bool
+	BorderRequired   bool
+
+	ContentFGColor lipgloss.TerminalColor
+	ContentBGColor lipgloss.TerminalColor
+
+	BorderFGColor lipgloss.TerminalColor
+	BorderBGColor lipgloss.TerminalColor
+
+	Border       lipgloss.Border
+	RendererName string
+}
+
+func DefaultRendererConfig(totalHeight int, totalWidth int) RendererConfig {
+	return RendererConfig{
+		TotalHeight:      totalHeight,
+		TotalWidth:       totalWidth,
+		TruncateHeight:   false,
+		BorderRequired:   false,
+		DefTruncateStyle: PlainTruncateRight,
+		ContentFGColor:   lipgloss.NoColor{},
+		ContentBGColor:   lipgloss.NoColor{},
+		BorderFGColor:    lipgloss.NoColor{},
+		BorderBGColor:    lipgloss.NoColor{},
+		//nolint: gosec // Not for security purpose, only for logging
+		RendererName: "R-" + strconv.Itoa(rand.IntN(rendererNameMax)),
+	}
+}
+
+func NewRenderer(cfg RendererConfig) (*Renderer, error) {
+	if err := validate(cfg); err != nil {
+		return nil, err
+	}
+
+	contentHeight := cfg.TotalHeight
+	if cfg.BorderRequired {
+		contentHeight -= 2
+	}
+	contentWidth := cfg.TotalWidth
+	if cfg.BorderRequired {
+		contentWidth -= 2
+	}
+
+	return &Renderer{
+
+		contentSections: []ContentRenderer{
+			NewContentRenderer(contentHeight, contentWidth, cfg.DefTruncateStyle, cfg.RendererName),
+		},
+		sectionDividers:     nil,
+		curSectionIdx:       0,
+		actualContentHeight: 0,
+		defTruncateStyle:    cfg.DefTruncateStyle,
+		truncateHeight:      cfg.TruncateHeight,
+
+		border: NewBorderConfig(cfg.TotalHeight, cfg.TotalWidth),
+
+		contentFGColor: cfg.ContentFGColor,
+		contentBGColor: cfg.ContentBGColor,
+		borderFGColor:  cfg.BorderFGColor,
+		borderBGColor:  cfg.BorderBGColor,
+
+		totalHeight:   cfg.TotalHeight,
+		totalWidth:    cfg.TotalWidth,
+		contentHeight: contentHeight,
+		contentWidth:  contentWidth,
+
+		borderRequired: cfg.BorderRequired,
+		borderStrings:  cfg.Border,
+		name:           cfg.RendererName,
+	}, nil
+}
+
+func validate(cfg RendererConfig) error {
+	if cfg.TotalHeight < 0 || cfg.TotalWidth < 0 {
+		return fmt.Errorf("dimensions must be non-negative (h=%d, w=%d)", cfg.TotalHeight, cfg.TotalWidth)
+	}
+	if cfg.BorderRequired {
+		if cfg.TotalWidth < MinWidthForBorder || cfg.TotalHeight < MinHeightForBorder {
+			return errors.New("need at least 2 width and height for borders")
+		}
+	}
+	return nil
+}
