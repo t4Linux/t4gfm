@@ -395,3 +395,33 @@ func TestFileDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteFromSelectModeExitsToBrowserMode(t *testing.T) {
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "file1.txt")
+	utils.SetupFilesWithData(t, []byte("f1"), filePath)
+
+	m := defaultTestModel(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), filePath)
+
+	panel := m.getFocusedFilePanel()
+	panel.ChangeFilePanelMode()
+	require.Equal(t, filepanel.SelectMode, panel.PanelMode)
+	panel.SetSelectedAll([]string{filePath})
+	require.EqualValues(t, 1, panel.SelectedCount())
+
+	p.SendKey(common.Hotkeys.PermanentlyDeleteItems[0])
+	assert.Eventually(t, m.notifyModel.IsOpen, DefaultTestTimeout,
+		DefaultTestTick, "Notify model never opened")
+	p.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(filePath)
+		return err != nil && os.IsNotExist(err)
+	}, DefaultTestTimeout, DefaultTestTick, "File never removed from original location")
+
+	assert.Eventually(t, func() bool {
+		return panel.PanelMode == filepanel.BrowserMode
+	}, DefaultTestTimeout, DefaultTestTick, "Panel mode did not switch back to browser mode")
+}

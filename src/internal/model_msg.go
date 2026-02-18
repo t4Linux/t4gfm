@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/t4Linux/t4gfm/src/internal/ui/filepanel"
 	"github.com/t4Linux/t4gfm/src/internal/ui/metadata"
 	"github.com/t4Linux/t4gfm/src/internal/ui/notify"
 	"github.com/t4Linux/t4gfm/src/internal/ui/processbar"
@@ -63,6 +64,9 @@ func NewDeleteOperationMsg(state processbar.ProcessState, reqID int) DeleteOpera
 func (msg DeleteOperationMsg) ApplyToModel(m *model) tea.Cmd {
 	// Remove selection
 	m.getFocusedFilePanel().ResetSelected()
+	if msg.state == processbar.Successful && m.getFocusedFilePanel().PanelMode == filepanel.SelectMode {
+		m.getFocusedFilePanel().ChangeFilePanelMode()
+	}
 	return nil
 }
 
