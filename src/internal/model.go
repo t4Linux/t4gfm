@@ -165,6 +165,9 @@ func (m *model) handleMouseLeftClick(x int, y int) {
 	if x < 0 || y < 0 || x >= m.fullWidth || y >= m.fullHeight {
 		return
 	}
+	if m.rangerPrefix != "" {
+		m.rangerPrefix = ""
+	}
 
 	if m.IsOverlayModelOpen() {
 		return
@@ -175,8 +178,12 @@ func (m *model) handleMouseLeftClick(x int, y int) {
 	if common.Config.SidebarWidth != 0 {
 		sidebarWidthWithBorder = common.Config.SidebarWidth + common.BorderPadding
 		if x < sidebarWidthWithBorder && y < mainHeightWithBorder {
+			clickedIndex := m.sidebarModel.ClickedDirectoryIndex(y, m.focusPanel == sidebarFocus)
 			m.focusPanel = sidebarFocus
 			m.getFocusedFilePanel().IsFocused = false
+			if clickedIndex >= 0 {
+				m.sidebarModel.SetCursor(clickedIndex)
+			}
 			return
 		}
 	}

@@ -150,6 +150,17 @@ func (s *Model) JumpToList() bool {
 	return false
 }
 
+func (s *Model) SetCursor(index int) {
+	if index < 0 || index >= len(s.directories) {
+		return
+	}
+	if s.directories[index].isDivider() {
+		return
+	}
+	s.cursor = index
+	s.updateRenderIndex()
+}
+
 // GetWidth returns the current width of the sidebar.
 func (m *Model) GetWidth() int {
 	return m.width
