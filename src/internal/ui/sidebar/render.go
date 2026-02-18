@@ -1,6 +1,9 @@
 package sidebar
 
 import (
+	"strings"
+	"time"
+
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/t4Linux/t4gfm/src/internal/common"
@@ -59,7 +62,15 @@ func (s *Model) renderProgramBarPanel(height int, focused bool) string {
 		return ""
 	}
 	r := ui.SidebarSectionRenderer(height, s.width, focused, "")
-	r.AddLines(common.FilePanelTopPathStyle.Render("t4gfm"))
+	contentWidth := max(0, s.width-common.BorderPadding)
+	programName := "t4gfm"
+	timestamp := time.Now().Format("15:04 02.01.06")
+	line := programName + " " + timestamp
+	padding := contentWidth - lipgloss.Width(programName) - lipgloss.Width(timestamp)
+	if padding > 0 {
+		line = programName + strings.Repeat(" ", padding) + timestamp
+	}
+	r.AddLines(common.FilePanelTopPathStyle.Render(line))
 	return r.Render()
 }
 
