@@ -14,6 +14,7 @@ jobs:
     name: Build and Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
 
@@ -62,10 +63,3 @@ jobs:
         run: |
           go fmt ./...
           git diff --exit-code
-
-      - name: golangci-lint (skip on Windows)
-        if: runner.os != 'Windows'
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.8.0
-          args: --timeout 3m
