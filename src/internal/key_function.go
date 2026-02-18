@@ -241,6 +241,9 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 			return m.getDeleteTriggerCmd(true)
 		case slices.Contains(common.Hotkeys.CopyItems, msg):
 			m.copyMultipleItem(false)
+			if panel.SelectedCount() > 0 {
+				panel.ChangeFilePanelMode()
+			}
 		case slices.Contains(common.Hotkeys.CutItems, msg):
 			m.copyMultipleItem(true)
 		case slices.Contains(common.Hotkeys.FilePanelSelectAllItem, msg):
@@ -313,6 +316,9 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 		case "y":
 			if m.getFocusedFilePanel().IsVisualSelectMode() || m.getFocusedFilePanel().PanelMode == filepanel.SelectMode {
 				m.copyMultipleItem(false)
+				if m.getFocusedFilePanel().SelectedCount() > 0 {
+					m.getFocusedFilePanel().ChangeFilePanelMode()
+				}
 			} else {
 				m.copySingleItem(false)
 			}

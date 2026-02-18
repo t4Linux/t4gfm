@@ -14,6 +14,7 @@ import (
 
 	variable "github.com/t4Linux/t4gfm/src/config"
 	"github.com/t4Linux/t4gfm/src/internal/common"
+	"github.com/t4Linux/t4gfm/src/internal/ui/filepanel"
 	"github.com/t4Linux/t4gfm/src/internal/ui/notify"
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
@@ -87,6 +88,28 @@ func TestYankMenu(t *testing.T) {
 	assert.Equal(t, "y", m.rangerPrefix)
 	TeaUpdate(m, utils.TeaRuneKeyMsg("esc"))
 	assert.Empty(t, m.rangerPrefix)
+}
+
+func TestCopySelectedItemsExitsSelectMode(t *testing.T) {
+	curTestDir := t.TempDir()
+	file1 := filepath.Join(curTestDir, "file1.txt")
+	utils.SetupFilesWithData(t, []byte("f1"), file1)
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	panel := m.getFocusedFilePanel()
+	panel.ChangeFilePanelMode()
+	require.Equal(t, filepanel.SelectMode, panel.PanelMode)
+	panel.SingleItemSelect()
+	require.EqualValues(t, 1, panel.SelectedCount())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("y"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("y"))
+
+	assert.Equal(t, filepanel.BrowserMode, panel.PanelMode)
+	assert.Equal(t, file1, m.clipboard.GetFirstItem())
+	assert.False(t, m.clipboard.IsCut())
 }
 
 func TestRangerPrefixOperations(t *testing.T) {
