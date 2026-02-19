@@ -463,23 +463,25 @@ func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 		return m.openEasterEggURL()
 	}
 
-	slog.Debug("model.handleKeyInput", "msg", msg, "typestr", msg.Type.String(),
-		"runes", msg.Runes, "type", int(msg.Type), "paste", msg.Paste,
-		"alt", msg.Alt, "key", key)
-	slog.Debug("model.handleKeyInput. model info. ",
-		"fileModel.FocusedPanelIndex", m.fileModel.FocusedPanelIndex,
-		"filePanel.isFocused", m.getFocusedFilePanel().IsFocused,
-		"filePanel.panelMode", m.getFocusedFilePanel().PanelMode,
-		"typingModal.open", m.typingModal.open,
-		"notifyModel.open", m.notifyModel.IsOpen(),
-		"promptModal.open", m.promptModal.IsOpen(),
-		"fileModel.renaming", m.fileModel.Renaming,
-		"searchBar.focused", m.getFocusedFilePanel().SearchBar.Focused(),
-		"helpMenu.open", m.helpMenu.IsOpen(),
-		"rangerPrefix", m.rangerPrefix,
-		"firstTextInput", m.firstTextInput,
-		"focusPanel", m.focusPanel,
-	)
+	if common.Config.Debug {
+		slog.Debug("model.handleKeyInput", "msg", msg, "typestr", msg.Type.String(),
+			"runes", msg.Runes, "type", int(msg.Type), "paste", msg.Paste,
+			"alt", msg.Alt, "key", key)
+		slog.Debug("model.handleKeyInput. model info. ",
+			"fileModel.FocusedPanelIndex", m.fileModel.FocusedPanelIndex,
+			"filePanel.isFocused", m.getFocusedFilePanel().IsFocused,
+			"filePanel.panelMode", m.getFocusedFilePanel().PanelMode,
+			"typingModal.open", m.typingModal.open,
+			"notifyModel.open", m.notifyModel.IsOpen(),
+			"promptModal.open", m.promptModal.IsOpen(),
+			"fileModel.renaming", m.fileModel.Renaming,
+			"searchBar.focused", m.getFocusedFilePanel().SearchBar.Focused(),
+			"helpMenu.open", m.helpMenu.IsOpen(),
+			"rangerPrefix", m.rangerPrefix,
+			"firstTextInput", m.firstTextInput,
+			"focusPanel", m.focusPanel,
+		)
+	}
 	if m.firstUse {
 		m.firstUse = false
 		return nil

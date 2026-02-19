@@ -15,6 +15,14 @@ type Model struct {
 	width  int
 	height int
 	items  copyItems
+	meta   map[string]clipboardItemMeta
+	dirty  bool
+}
+
+type clipboardItemMeta struct {
+	isDir  bool
+	isLink bool
+	ok     bool
 }
 
 // Copied items
@@ -32,6 +40,7 @@ func (m *Model) Render() string {
 	r := ui.ClipboardRenderer(m.height, m.width)
 	viewHeight := m.height - common.BorderPadding
 	viewWidth := m.width - common.InnerPadding
+	m.ensureItemMetaCache()
 	if len(m.items.items) == 0 {
 		// TODO move this to a string
 		r.AddLines("", common.ClipboardNoneText)
@@ -41,21 +50,43 @@ func (m *Model) Render() string {
 				// Last Entry we can render, but there are more that one left
 				r.AddLines(strconv.Itoa(len(m.items.items)-i) + " items left....")
 			} else {
-				// TODO: Avoid Lstat during render for performance
-				// Add IsDir/IsLink information in the item type or
-				// better use filepanel's Element strcut as-is
-				fileInfo, err := os.Lstat(m.items.items[i])
-				if err != nil {
-					slog.Error("Clipboard render function get item state ", "error", err)
+				meta, ok := m.meta[m.items.items[i]]
+				if !ok || !meta.ok {
 					continue
 				}
-				isLink := fileInfo.Mode()&os.ModeSymlink != 0
 				r.AddLines(common.ClipboardPrettierName(m.items.items[i],
-					viewWidth, fileInfo.IsDir(), isLink, false))
+					viewWidth, meta.isDir, meta.isLink, false))
 			}
 		}
 	}
 	return r.Render()
+}
+
+func (m *Model) ensureItemMetaCache() {
+	if !m.dirty {
+		return
+	}
+	if m.meta == nil {
+		m.meta = make(map[string]clipboardItemMeta, len(m.items.items))
+	} else {
+		for k := range m.meta {
+			delete(m.meta, k)
+		}
+	}
+	for _, item := range m.items.items {
+		fileInfo, err := os.Lstat(item)
+		if err != nil {
+			slog.Debug("Clipboard item metadata skipped", "path", item, "error", err)
+			m.meta[item] = clipboardItemMeta{ok: false}
+			continue
+		}
+		m.meta[item] = clipboardItemMeta{
+			isDir:  fileInfo.IsDir(),
+			isLink: fileInfo.Mode()&os.ModeSymlink != 0,
+			ok:     true,
+		}
+	}
+	m.dirty = false
 }
 
 func (m *Model) IsCut() bool {
@@ -65,15 +96,18 @@ func (m *Model) IsCut() bool {
 func (m *Model) Reset(cut bool) {
 	m.items.cut = cut
 	m.items.items = m.items.items[:0]
+	m.dirty = true
 }
 
 func (m *Model) Add(location string) {
 	m.items.items = append(m.items.items, location)
+	m.dirty = true
 }
 
 func (m *Model) SetItems(items []string) {
 	m.items.items = make([]string, len(items))
 	copy(m.items.items, items)
+	m.dirty = true
 }
 
 func (m *Model) pruneInaccessibleItems() {
@@ -81,6 +115,7 @@ func (m *Model) pruneInaccessibleItems() {
 		_, err := os.Lstat(item)
 		return err != nil
 	})
+	m.dirty = true
 }
 
 func (m *Model) GetItems() []string {

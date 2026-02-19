@@ -31,6 +31,14 @@ type Model struct {
 	cbItems []string
 	cbCut   bool
 	cbIndex int
+	cbMeta  map[string]gitClipboardItemMeta
+	cbDirty bool
+}
+
+type gitClipboardItemMeta struct {
+	isDir  bool
+	isLink bool
+	ok     bool
 }
 
 func New() Model {
@@ -87,9 +95,13 @@ func (m *Model) Status() string {
 }
 
 func (m *Model) SetClipboard(items []string, cut bool) {
+	if m.cbCut == cut && equalStringSlices(m.cbItems, items) {
+		return
+	}
 	m.cbItems = make([]string, len(items))
 	copy(m.cbItems, items)
 	m.cbCut = cut
+	m.cbDirty = true
 	if m.cbIndex >= len(m.cbItems) {
 		m.cbIndex = 0
 	}
@@ -200,6 +212,7 @@ func (m *Model) renderClipboardTab(r *rendering.Renderer, viewWidth int) {
 		r.AddLines(common.ClipboardNoneText)
 		return
 	}
+	m.ensureClipboardMetaCache()
 	r.SetBorderInfoItems(strconv.Itoa(m.cbIndex+1) + "/" + strconv.Itoa(len(m.cbItems)))
 
 	for i := m.cbIndex; i < len(m.cbItems) && i < m.cbIndex+listRows; i++ {
@@ -207,13 +220,50 @@ func (m *Model) renderClipboardTab(r *rendering.Renderer, viewWidth int) {
 			r.AddLines(strconv.Itoa(len(m.cbItems)-i) + " items left....")
 			continue
 		}
-		fileInfo, err := os.Lstat(m.cbItems[i])
-		if err != nil {
+		meta, ok := m.cbMeta[m.cbItems[i]]
+		if !ok || !meta.ok {
 			continue
 		}
-		isLink := fileInfo.Mode()&os.ModeSymlink != 0
-		r.AddLines(common.ClipboardPrettierName(m.cbItems[i], viewWidth, fileInfo.IsDir(), isLink, false))
+		r.AddLines(common.ClipboardPrettierName(m.cbItems[i], viewWidth, meta.isDir, meta.isLink, false))
 	}
+}
+
+func (m *Model) ensureClipboardMetaCache() {
+	if !m.cbDirty {
+		return
+	}
+	if m.cbMeta == nil {
+		m.cbMeta = make(map[string]gitClipboardItemMeta, len(m.cbItems))
+	} else {
+		for k := range m.cbMeta {
+			delete(m.cbMeta, k)
+		}
+	}
+	for _, item := range m.cbItems {
+		fileInfo, err := os.Lstat(item)
+		if err != nil {
+			m.cbMeta[item] = gitClipboardItemMeta{ok: false}
+			continue
+		}
+		m.cbMeta[item] = gitClipboardItemMeta{
+			isDir:  fileInfo.IsDir(),
+			isLink: fileInfo.Mode()&os.ModeSymlink != 0,
+			ok:     true,
+		}
+	}
+	m.cbDirty = false
+}
+
+func equalStringSlices(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func oneLineField(label string, value string, viewWidth int) string {
