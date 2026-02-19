@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -478,4 +479,36 @@ func TestCtrlCCancelsRunningProcesses(t *testing.T) {
 	TeaUpdate(m, tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	assert.Greater(t, m.processBarModel.CancelGeneration(), startGeneration)
+}
+
+func TestQuestionMarkEasterEggOpensURLOnTripleQuestion(t *testing.T) {
+	curTestDir := t.TempDir()
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	oldOpenExternalURL := openExternalURL
+	t.Cleanup(func() {
+		openExternalURL = oldOpenExternalURL
+	})
+
+	called := ""
+	openExternalURL = func(url string) error {
+		called = url
+		return nil
+	}
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("?"))
+	assert.Equal(t, 1, m.easterEggQCnt)
+	TeaUpdate(m, utils.TeaRuneKeyMsg("?"))
+	assert.Equal(t, 2, m.easterEggQCnt)
+	cmd := TeaUpdate(m, utils.TeaRuneKeyMsg("?"))
+	assert.Equal(t, 0, m.easterEggQCnt)
+	msg := ExecuteTeaCmdWithTimeout(cmd, time.Second)
+	if batch, ok := msg.(tea.BatchMsg); ok {
+		for _, curCmd := range batch {
+			_ = ExecuteTeaCmdWithTimeout(curCmd, time.Second)
+		}
+	}
+
+	assert.Equal(t, "https://github.com/t4Linux", called)
 }

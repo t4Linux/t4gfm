@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,6 +17,31 @@ import (
 
 	variable "github.com/t4Linux/t4gfm/src/config"
 )
+
+var openExternalURL = func(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
+}
+
+func (m *model) openEasterEggURL() tea.Cmd {
+	const easterEggURL = "https://github.com/t4Linux"
+	reqID := m.ioReqCnt
+	m.ioReqCnt++
+	return func() tea.Msg {
+		if err := openExternalURL(easterEggURL); err != nil {
+			return NewNotifyModalMsg(notify.New(true, "Failed to open URL", err.Error(), notify.NoAction), reqID)
+		}
+		return nil
+	}
+}
 
 // Back to parent directory
 func (m *model) parentDirectory() {

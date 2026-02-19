@@ -455,6 +455,16 @@ func (m *model) setFooterComponentSize() {
 // msg keybind pressed
 func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 	key := normalizeKeyInput(msg)
+	isQuestionKey := key == "?" || (len(msg.Runes) == 1 && msg.Runes[0] == '?')
+	if isQuestionKey {
+		m.easterEggQCnt++
+	} else {
+		m.easterEggQCnt = 0
+	}
+	if m.easterEggQCnt == 3 {
+		m.easterEggQCnt = 0
+		return m.openEasterEggURL()
+	}
 
 	slog.Debug("model.handleKeyInput", "msg", msg, "typestr", msg.Type.String(),
 		"runes", msg.Runes, "type", int(msg.Type), "paste", msg.Paste,

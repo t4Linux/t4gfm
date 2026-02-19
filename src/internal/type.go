@@ -77,6 +77,7 @@ type model struct {
 	ioReqCnt             int
 	modelQuitState       modelQuitStateType
 	firstTextInput       bool
+	easterEggQCnt        int
 	rangerPrefix         string
 	rangerMarks          map[string]string
 	lastPaneTitle        string
