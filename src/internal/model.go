@@ -507,7 +507,7 @@ func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 		m.sidebarRenamingKey(key)
 	// If search bar is open
 	case m.getFocusedFilePanel().SearchBar.Focused():
-		m.focusOnSearchbarKey(key)
+		cmd = m.focusOnSearchbarKey(key)
 	// If sort options menu is open
 	case m.sidebarModel.SearchBarFocused():
 		m.sidebarModel.HandleSearchBarKey(key)

@@ -430,3 +430,29 @@ func TestSmallHeightForcesCompactFooterInsteadOfTerminalWarning(t *testing.T) {
 	assert.True(t, m.isCompactFooterActive())
 	assert.NotContains(t, m.View(), "Terminal size too small")
 }
+
+func TestSearchCanDropToFilteredListWithDownKey(t *testing.T) {
+	curTestDir := t.TempDir()
+	keepDir := filepath.Join(curTestDir, "a-dir")
+	betaDir := filepath.Join(curTestDir, "b-beta")
+	bravoDir := filepath.Join(curTestDir, "b-bravo")
+	utils.SetupDirectories(t, keepDir, betaDir, bravoDir)
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.SearchBar[0]))
+	require.True(t, m.getFocusedFilePanel().SearchBar.Focused())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("b"))
+	require.Equal(t, "b", m.getFocusedFilePanel().SearchBar.Value())
+
+	TeaUpdate(m, tea.KeyMsg{Type: tea.KeyDown})
+	require.False(t, m.getFocusedFilePanel().SearchBar.Focused())
+
+	focused := m.getFocusedFilePanel().GetFocusedItem().Location
+	assert.Equal(t, betaDir, focused)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.Confirm[0]))
+	assert.Equal(t, betaDir, m.getFocusedFilePanel().Location)
+}

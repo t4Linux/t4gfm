@@ -676,13 +676,24 @@ func (m *model) sidebarRenamingKey(msg string) {
 }
 
 // Check the key input and cancel or confirms the search
-func (m *model) focusOnSearchbarKey(msg string) {
+func (m *model) focusOnSearchbarKey(msg string) tea.Cmd {
 	switch {
 	case msg == "esc" || msg == "ctrl+[":
 		m.confirmSearch()
 	case slices.Contains(common.Hotkeys.CancelTyping, msg):
 		m.cancelSearch()
+	case msg == "down":
+		m.confirmSearch()
+	case msg == "up":
+		m.confirmSearch()
+	case msg == "pgdown" || msg == "ctrl+f":
+		m.confirmSearch()
+		m.getFocusedFilePanel().PgDown()
+	case msg == "pgup" || msg == "ctrl+b":
+		m.confirmSearch()
+		m.getFocusedFilePanel().PgUp()
 	case slices.Contains(common.Hotkeys.ConfirmTyping, msg):
 		m.confirmSearch()
 	}
+	return nil
 }
