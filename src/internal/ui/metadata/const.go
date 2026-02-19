@@ -12,7 +12,7 @@ const etFetchErrorMsg = "Errors while fetching metadata via exiftool"
 
 const keyName = "Name"
 const keySize = "Size"
-const keyDataModified = "Date Modified"
+const keyDataModified = "Modified"
 const keyDataAccessed = "Date Accessed"
 const keyPermissions = "Permissions"
 const keyMd5Checksum = "MD5Checksum"

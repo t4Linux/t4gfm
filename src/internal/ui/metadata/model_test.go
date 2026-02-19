@@ -65,3 +65,22 @@ func TestUpDown(t *testing.T) {
 		})
 	}
 }
+
+func TestInvalidatePath(t *testing.T) {
+	m := New()
+	path := "/tmp/example"
+	meta := Metadata{filepath: path, data: [][2]string{{"Permissions", "644"}}}
+
+	m.SetMetadataCache(meta, true)
+	m.SetMetadataCache(meta, false)
+	m.SetMetadataLocationAndFocused(path, true)
+
+	assert.True(t, m.UpdateMetadataIfExistsInCache(path, true))
+	assert.True(t, m.UpdateMetadataIfExistsInCache(path, false))
+
+	m.InvalidatePath(path)
+
+	assert.False(t, m.UpdateMetadataIfExistsInCache(path, true))
+	assert.False(t, m.UpdateMetadataIfExistsInCache(path, false))
+	assert.Equal(t, "", m.GetMetadataLocation())
+}

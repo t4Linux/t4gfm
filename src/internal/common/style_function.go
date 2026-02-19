@@ -15,6 +15,10 @@ func ModalBorderStyle(height int, width int) lipgloss.Style {
 	return modalBorderStyleWithAlign(height, width, lipgloss.Center)
 }
 
+func ModalBorderStyleLeft(height int, width int) lipgloss.Style {
+	return modalBorderStyleWithAlign(height, width, lipgloss.Left)
+}
+
 // Generate modal (pop up widnwos) border style
 func modalBorderStyleWithAlign(height int, width int, horizontalAlignment lipgloss.Position) lipgloss.Style {
 	border := GenerateBorder()

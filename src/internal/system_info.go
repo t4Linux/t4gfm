@@ -3,7 +3,7 @@ package internal
 import (
 	"fmt"
 	"net"
-	"os/user"
+	"os"
 	"sort"
 	"strings"
 	"syscall"
@@ -14,9 +14,9 @@ import (
 )
 
 type systemInfo struct {
-	user    string
-	localIP string
-	disk    string
+	hostname string
+	localIP  string
+	disk     string
 }
 
 func (m *model) getSystemInfoCmd() tea.Cmd {
@@ -32,9 +32,9 @@ func (m *model) getSystemInfoCmd() tea.Cmd {
 }
 
 func fetchSystemInfo(path string) systemInfo {
-	username := "unknown"
-	if u, err := user.Current(); err == nil && u.Username != "" {
-		username = u.Username
+	hostname := "unknown"
+	if h, err := os.Hostname(); err == nil && h != "" {
+		hostname = h
 	}
 
 	ipSet := map[string]struct{}{}
@@ -86,7 +86,7 @@ func fetchSystemInfo(path string) systemInfo {
 		disk = fmt.Sprintf("%s / %s [ %d%% free ]", common.FormatFileSize(int64(used)), common.FormatFileSize(int64(total)), freePct)
 	}
 
-	return systemInfo{user: username, localIP: localIP, disk: disk}
+	return systemInfo{hostname: hostname, localIP: localIP, disk: disk}
 }
 
 func isPhysicalInterface(name string) bool {

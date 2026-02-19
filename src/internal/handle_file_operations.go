@@ -57,6 +57,40 @@ func (m *model) panelOpenWithPrompt() {
 	m.firstTextInput = false
 }
 
+func (m *model) applyChmodSymbol(symbol string) {
+	panel := m.getFocusedFilePanel()
+	if panel.Empty() {
+		return
+	}
+
+	items := []string{}
+	if panel.PanelMode == filepanel.SelectMode {
+		panel.EnsureVisualSelection()
+		items = panel.GetSelectedLocations()
+	}
+	if len(items) == 0 {
+		items = []string{panel.GetFocusedItem().Location}
+	}
+
+	if _, err := exec.LookPath("chmod"); err != nil {
+		m.notifyModel = notify.New(true, "chmod unavailable", "chmod command not found in PATH", notify.NoAction)
+		return
+	}
+
+	args := append([]string{symbol}, items...)
+	cmd := exec.Command("chmod", args...)
+	if err := cmd.Run(); err != nil {
+		m.notifyModel = notify.New(true, "chmod failed", err.Error(), notify.NoAction)
+		return
+	}
+
+	for _, item := range items {
+		m.fileMetaData.InvalidatePath(item)
+	}
+
+	m.fileModel.UpdateFilePanelsIfNeeded(true)
+}
+
 // TODO : This function does not needs the entire model. Only pass the panel object
 func (m *model) IsRenamingConflicting() bool {
 	// TODO : Replace this with m.getCurrentFilePanel() everywhere

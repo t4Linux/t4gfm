@@ -38,3 +38,11 @@ func (m *Model) UpdateMetadataIfExistsInCache(filepath string, metadataFocused b
 	}
 	return false
 }
+
+func (m *Model) InvalidatePath(filePath string) {
+	m.cache.Delete(cacheKey(filePath, true))
+	m.cache.Delete(cacheKey(filePath, false))
+	if m.expectedLocation == filePath {
+		m.expectedLocation = ""
+	}
+}

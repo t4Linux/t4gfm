@@ -240,6 +240,6 @@ func (msg SystemInfoMsg) ApplyToModel(m *model) tea.Cmd {
 	if m.getFocusedFilePanel().Location != msg.path {
 		return nil
 	}
-	m.systemPanel.SetData(msg.path, msg.info.user, msg.info.localIP, msg.info.disk)
+	m.systemPanel.SetData(msg.path, msg.info.hostname, msg.info.localIP, msg.info.disk)
 	return nil
 }

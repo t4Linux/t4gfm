@@ -195,14 +195,64 @@ func (m *model) rangerPrefixMenuRender() string {
 	case "s":
 		lines = " ss - focus System panel\n" +
 			" sm - focus Metadata panel\n" +
-			" sg - focus main file panel\n" +
-			" st - focus Git panel\n" +
+			" sa - focus main file panel\n" +
+			" sg - focus Git panel\n" +
 			" sp - jump to Pinned section\n" +
 			" sd - jump to Disks section\n" +
-			" sl - jump to top list section"
+			" sf - jump to Files section"
 	case "m":
 		lines = " m?? - save current location under two-letter key\n" +
 			" example: mca"
+	case "+", "-":
+		actionWord := "add"
+		actionTitle := "add permissions"
+		if m.rangerPrefix == "-" {
+			actionWord = "remove"
+			actionTitle = "remove permissions"
+		}
+		lines = " chmod: " + actionTitle + "\n\n" +
+			" Quick (all classes):\n" +
+			"   " + m.rangerPrefix + "r  -> " + actionWord + " read permission\n" +
+			"   " + m.rangerPrefix + "w  -> " + actionWord + " write permission\n" +
+			"   " + m.rangerPrefix + "x  -> " + actionWord + " execute permission\n" +
+			"   " + m.rangerPrefix + "X  -> " + actionWord + " execute permission conditionally (as in chmod)\n" +
+			"   " + m.rangerPrefix + "s  -> " + actionWord + " setuid/setgid\n" +
+			"   " + m.rangerPrefix + "t  -> " + actionWord + " sticky bit\n\n" +
+			" Precise (choose class first, then permission):\n" +
+			"   u = user (file owner)\n" +
+			"   g = group (file group)\n" +
+			"   o = others (everyone else)\n" +
+			"   a = all (u+g+o)\n\n" +
+			" Examples:\n" +
+			"   " + m.rangerPrefix + " u x  -> chmod u" + m.rangerPrefix + "x\n" +
+			"   " + m.rangerPrefix + " g w  -> chmod g" + m.rangerPrefix + "w\n" +
+			"   " + m.rangerPrefix + " a r  -> chmod a" + m.rangerPrefix + "r"
+	case "+u", "+g", "+o", "+a", "-u", "-g", "-o", "-a":
+		op := string(m.rangerPrefix[0])
+		class := string(m.rangerPrefix[1])
+		actionWord := "add"
+		actionTitle := "add permissions"
+		if op == "-" {
+			actionWord = "remove"
+			actionTitle = "remove permissions"
+		}
+		className := map[string]string{
+			"u": "user",
+			"g": "group",
+			"o": "others",
+			"a": "all",
+		}[class]
+		lines = " chmod: " + actionTitle + "\n" +
+			" selected class: '" + class + "' (" + className + ")\n\n" +
+			" Now choose permission:\n" +
+			"   r = " + actionWord + " read\n" +
+			"   w = " + actionWord + " write\n" +
+			"   x = " + actionWord + " execute\n" +
+			"   X = " + actionWord + " execute conditionally\n" +
+			"   s = " + actionWord + " setuid/setgid\n" +
+			"   t = " + actionWord + " sticky bit\n\n" +
+			" Example:\n" +
+			"   " + m.rangerPrefix + " then x -> chmod " + class + op + "x"
 	case "ma", "mb", "mc", "md", "me", "mf", "mg", "mh", "mi", "mj", "mk", "ml", "mm", "mn", "mo", "mp", "mq", "mr", "ms", "mt", "mu", "mv", "mw", "mx", "my", "mz":
 		lines = " m" + m.rangerPrefix[1:] + "? - second letter for location key"
 	case ";":
@@ -243,6 +293,6 @@ func (m *model) rangerPrefixMenuRender() string {
 	}
 
 	lines += "\n\n esc/q - cancel"
-	content := common.ModalStyle.Render(lines)
-	return common.ModalBorderStyle(common.ModalHeight, common.ModalWidth).Render(title + "\n\n" + content)
+	content := common.ModalStyle.PaddingLeft(2).PaddingRight(2).Render(lines)
+	return common.ModalBorderStyleLeft(common.ModalHeight, common.ModalWidth).Render(title + "\n\n" + content)
 }

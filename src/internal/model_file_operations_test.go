@@ -470,3 +470,61 @@ func TestDeleteFromSelectModeExitsToBrowserMode(t *testing.T) {
 		return panel.PanelMode == filepanel.BrowserMode
 	}, DefaultTestTimeout, DefaultTestTick, "Panel mode did not switch back to browser mode")
 }
+
+func TestRangerStyleChmodPrefix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod shortcut test is Unix-specific")
+	}
+
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "perm.txt")
+	utils.SetupFilesWithData(t, []byte("perm"), filePath)
+	require.NoError(t, os.Chmod(filePath, 0o644))
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("+"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("u"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err := os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o744), info.Mode().Perm())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("-"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("u"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err = os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("+"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err = os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("-"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err = os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("="))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err = os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("-"))
+	TeaUpdate(m, utils.TeaRuneKeyMsg("x"))
+
+	info, err = os.Stat(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+}

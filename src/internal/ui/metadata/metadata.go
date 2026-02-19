@@ -125,7 +125,7 @@ func getMetaDataUnsorted(filePath string, metadataFocused bool, et *exiftool.Exi
 	// Note : we prioritize these while sorting Metadata
 	name := [2]string{keyName, fileInfo.Name()}
 	size := [2]string{keySize, common.FormatFileSize(fileInfo.Size())}
-	modifyDate := [2]string{keyDataModified, fileInfo.ModTime().String()}
+	modifyDate := [2]string{keyDataModified, fileInfo.ModTime().Format("2006-01-02 15:04:05")}
 	permissions := [2]string{keyPermissions, fileInfo.Mode().String()}
 	ownerVal, groupVal := getOwnerAndGroup(fileInfo)
 	owner := [2]string{keyOwner, ownerVal}

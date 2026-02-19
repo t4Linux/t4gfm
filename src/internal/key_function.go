@@ -223,7 +223,7 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 	// if not focus on the filepanel return
 	if !m.getFocusedFilePanel().IsFocused {
 		if isRangerPrefixStart(msg) {
-			m.rangerPrefix = msg
+			m.rangerPrefix = normalizeRangerPrefixStart(msg)
 			return nil
 		}
 		if m.focusPanel == sidebarFocus && (msg == "esc" || msg == "ctrl+[") && m.sidebarModel.HasSearchQuery() {
@@ -262,7 +262,7 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 		case slices.Contains(common.Hotkeys.Confirm, msg):
 			panel.SingleItemSelect()
 		case isRangerPrefixStart(msg):
-			m.rangerPrefix = msg
+			m.rangerPrefix = normalizeRangerPrefixStart(msg)
 		case slices.Contains(common.Hotkeys.FilePanelSelectModeItemsSelectUp, msg):
 			panel.ItemSelectUp()
 		case slices.Contains(common.Hotkeys.FilePanelSelectModeItemsSelectDown, msg):
@@ -295,7 +295,7 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 	case slices.Contains(common.Hotkeys.Confirm, msg):
 		return m.enterPanel()
 	case isRangerPrefixStart(msg):
-		m.rangerPrefix = msg
+		m.rangerPrefix = normalizeRangerPrefixStart(msg)
 	case msg == "G":
 		m.moveCursorToBottom()
 	case msg == "L":
@@ -329,7 +329,23 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 }
 
 func isRangerPrefixStart(msg string) bool {
-	return msg == "y" || msg == "d" || msg == "p" || msg == "g" || msg == "o" || msg == "z" || msg == "m" || msg == ";" || msg == "s"
+	switch normalizeRangerPrefixStart(msg) {
+	case "y", "d", "p", "g", "o", "z", "m", ";", "s", "+", "-":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeRangerPrefixStart(msg string) string {
+	switch msg {
+	case "=", "shift+=", "kp+":
+		return "+"
+	case "_", "shift+-", "kp-":
+		return "-"
+	default:
+		return msg
+	}
 }
 
 func (m *model) rangerPrefixKey(msg string) tea.Cmd {
@@ -410,21 +426,45 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 			m.focusOnProcessBar()
 		case "m":
 			m.focusOnMetadata()
-		case "g":
+		case "a":
 			m.focusOnMainPanel()
-		case "t":
+		case "g":
 			m.focusOnGit()
 		case "p":
 			m.jumpToSidebarSectionPinned()
 		case "d":
 			m.jumpToSidebarSectionDisks()
-		case "l":
+		case "f":
 			m.jumpToSidebarSectionList()
 		}
 	case "m":
 		if isMarkChar(msg) {
 			m.rangerPrefix = "m" + strings.ToLower(msg)
 			return nil
+		}
+	case "+":
+		if isChmodClassChar(msg) {
+			m.rangerPrefix = "+" + strings.ToLower(msg)
+			return nil
+		}
+		if isChmodPermChar(msg) {
+			m.applyChmodSymbol("+" + msg)
+		}
+	case "-":
+		if isChmodClassChar(msg) {
+			m.rangerPrefix = "-" + strings.ToLower(msg)
+			return nil
+		}
+		if isChmodPermChar(msg) {
+			m.applyChmodSymbol("-" + msg)
+		}
+	case "+u", "+g", "+o", "+a", "-u", "-g", "-o", "-a":
+		if isChmodPermChar(msg) {
+			if strings.HasPrefix(prefix, "+") {
+				m.applyChmodSymbol(strings.TrimPrefix(prefix, "+") + "+" + msg)
+			} else {
+				m.applyChmodSymbol(strings.TrimPrefix(prefix, "-") + "-" + msg)
+			}
 		}
 	case "ma", "mb", "mc", "md", "me", "mf", "mg", "mh", "mi", "mj", "mk", "ml", "mm", "mn", "mo", "mp", "mq", "mr", "ms", "mt", "mu", "mv", "mw", "mx", "my", "mz":
 		if isMarkChar(msg) {
@@ -481,6 +521,30 @@ func isMarkChar(msg string) bool {
 	}
 	c := msg[0]
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+func isChmodClassChar(msg string) bool {
+	if len(msg) != 1 {
+		return false
+	}
+	switch msg[0] {
+	case 'u', 'g', 'o', 'a', 'U', 'G', 'O', 'A':
+		return true
+	default:
+		return false
+	}
+}
+
+func isChmodPermChar(msg string) bool {
+	if len(msg) != 1 {
+		return false
+	}
+	switch msg[0] {
+	case 'r', 'w', 'x', 'X', 's', 't':
+		return true
+	default:
+		return false
+	}
 }
 
 func (m *model) moveCursorToTop() {

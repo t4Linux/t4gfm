@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/t4Linux/t4gfm/src/internal/common"
 )
@@ -45,12 +46,32 @@ func formatMetadataLines(meta [][2]string, startIdx, height, keyLen, valueLen in
 			lines = append(lines, common.TruncateMiddleText(meta[i][1], keyLen+keyValueSpacingLen+valueLen, "..."))
 			continue
 		}
+		if meta[i][0] == keyDataModified {
+			datePart, timePart := splitDateAndTime(meta[i][1])
+			dateValue := common.TruncateMiddleText(datePart, valueLen, "...")
+			key := common.TruncateMiddleText(meta[i][0], keyLen, "...")
+			lines = append(lines, fmt.Sprintf("%-*s%s%s", keyLen, key, keyValueSpacing, dateValue))
+			if len(lines) >= height {
+				break
+			}
+			timeValue := common.TruncateMiddleText(timePart, valueLen, "...")
+			lines = append(lines, fmt.Sprintf("%-*s%s%s", keyLen, "", keyValueSpacing, timeValue))
+			continue
+		}
 		value := common.TruncateMiddleText(meta[i][1], valueLen, "...")
 		key := common.TruncateMiddleText(meta[i][0], keyLen, "...")
 		line := fmt.Sprintf("%-*s%s%s", keyLen, key, keyValueSpacing, value)
 		lines = append(lines, line)
 	}
 	return lines
+}
+
+func splitDateAndTime(value string) (string, string) {
+	parts := strings.Fields(value)
+	if len(parts) >= 2 {
+		return parts[0], parts[1]
+	}
+	return value, ""
 }
 
 func computeRenderDimensions(metadata [][2]string, viewWidth int) (int, int) {

@@ -8,13 +8,13 @@ import (
 )
 
 type Model struct {
-	width   int
-	height  int
-	path    string
-	user    string
-	localIP string
-	disk    string
-	procs   []string
+	width    int
+	height   int
+	path     string
+	hostname string
+	localIP  string
+	disk     string
+	procs    []string
 }
 
 func New() Model {
@@ -26,9 +26,9 @@ func (m *Model) SetDimensions(width int, height int) {
 	m.height = height
 }
 
-func (m *Model) SetData(path string, user string, localIP string, disk string) {
+func (m *Model) SetData(path string, hostname string, localIP string, disk string) {
 	m.path = path
-	m.user = user
+	m.hostname = hostname
 	m.localIP = localIP
 	m.disk = disk
 }
@@ -47,7 +47,7 @@ func (m *Model) GetHeight() int {
 
 func (m *Model) Render(focused bool) string {
 	r := ui.SystemRenderer(m.height, m.width, focused)
-	r.AddLines(" user: " + m.user)
+	r.AddLines(" Hostname: " + m.hostname)
 	ipList := strings.Split(m.localIP, ", ")
 	if len(ipList) == 0 {
 		r.AddLines(" IP: unavailable")
