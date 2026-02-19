@@ -481,6 +481,12 @@ func TestCtrlCCancelsRunningProcesses(t *testing.T) {
 	assert.Greater(t, m.processBarModel.CancelGeneration(), startGeneration)
 }
 
+func TestIsMouseLeftClickUsesReleaseOnly(t *testing.T) {
+	assert.False(t, isMouseLeftClick(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}))
+	assert.True(t, isMouseLeftClick(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft}))
+	assert.True(t, isMouseLeftClick(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonNone}))
+}
+
 func TestQuestionMarkEasterEggOpensURLOnTripleQuestion(t *testing.T) {
 	curTestDir := t.TempDir()
 	m := defaultTestModel(curTestDir)

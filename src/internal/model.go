@@ -184,9 +184,6 @@ func (m *model) handleMouseMsg(msg tea.MouseMsg) {
 }
 
 func isMouseLeftClick(msg tea.MouseMsg) bool {
-	if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
-		return true
-	}
 	if msg.Action == tea.MouseActionRelease &&
 		(msg.Button == tea.MouseButtonLeft || msg.Button == tea.MouseButtonNone) {
 		return true
