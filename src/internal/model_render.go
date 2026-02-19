@@ -31,8 +31,9 @@ func (m *model) terminalSizeWarnRender() string {
 	fullWidthString := strconv.Itoa(m.fullWidth)
 	fullHeightString := strconv.Itoa(m.fullHeight)
 	minimumWidthString := strconv.Itoa(common.MinimumWidth)
-	minimumHeightString := strconv.Itoa(common.MinimumHeight)
-	if m.fullHeight < common.MinimumHeight {
+	minimumHeight := m.minimumRenderableHeight()
+	minimumHeightString := strconv.Itoa(minimumHeight)
+	if m.fullHeight < minimumHeight {
 		fullHeightString = common.TerminalTooSmall.Render(fullHeightString)
 	}
 	if m.fullWidth < common.MinimumWidth {
@@ -57,9 +58,10 @@ func (m *model) terminalSizeWarnAfterFirstRender() string {
 	minimumWidthString := strconv.Itoa(minimumWidthInt)
 	fullWidthString := strconv.Itoa(m.fullWidth)
 	fullHeightString := strconv.Itoa(m.fullHeight)
-	minimumHeightString := strconv.Itoa(common.MinimumHeight)
+	minimumHeight := m.minimumRenderableHeight()
+	minimumHeightString := strconv.Itoa(minimumHeight)
 
-	if m.fullHeight < common.MinimumHeight {
+	if m.fullHeight < minimumHeight {
 		fullHeightString = common.TerminalTooSmall.Render(fullHeightString)
 	}
 	if m.fullWidth < minimumWidthInt {

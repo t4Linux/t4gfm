@@ -16,7 +16,7 @@ const minLinesForBorder = 3
 // Non fatal Validations. This indicates bug / programming errors, not user configuration mistake
 func (m *model) validateLayout() error { //nolint:gocognit // cumilation of validations
 	// Validate footer height
-	if 0 < m.footerHeight && m.footerHeight < common.MinFooterHeight && !m.compactFooter {
+	if 0 < m.footerHeight && m.footerHeight < common.MinFooterHeight && !m.isCompactFooterActive() {
 		return fmt.Errorf("footerHeight %v is too small", m.footerHeight)
 	}
 	if !m.toggleFooter && m.footerHeight != 0 {
@@ -247,7 +247,7 @@ func (m *model) validateComponentRender() error {
 		return fmt.Errorf("file model render validation failed: %w", err)
 	}
 
-	if m.toggleFooter && !m.compactFooter {
+	if m.toggleFooter && !m.isCompactFooterActive() {
 		if err := validateRender(
 			m.systemPanelRender(),
 			m.systemPanel.GetHeight(),
@@ -333,7 +333,7 @@ func (m *model) validateFinalRender() error { //nolint:gocognit // cumilation of
 		}
 	}
 
-	if m.toggleFooter && !m.compactFooter {
+	if m.toggleFooter && !m.isCompactFooterActive() {
 		systemPanelPos := compPosition{
 			stRow:  m.mainPanelHeight + common.BorderPadding,
 			stCol:  0,

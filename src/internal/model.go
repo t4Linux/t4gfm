@@ -352,7 +352,7 @@ func (m *model) setHeightValues() {
 	//nolint: gocritic // This is to be separated out to a function, and made better later. No need to refactor here
 	if !m.toggleFooter {
 		m.footerHeight = 0
-	} else if m.compactFooter {
+	} else if m.isCompactFooterActive() {
 		m.footerHeight = 1
 		m.mainPanelHeight = m.fullHeight - common.BorderPadding - 1
 		return
@@ -372,6 +372,22 @@ func (m *model) setHeightValues() {
 
 	// Main panel height = Total terminal height- 2(file panel border) - footer height
 	m.mainPanelHeight = m.fullHeight - common.BorderPadding - utils.FullFooterHeight(m.footerHeight, m.toggleFooter)
+}
+
+func (m *model) compactFooterForcedByHeight() bool {
+	return m.toggleFooter && m.fullHeight < common.MinimumHeight
+}
+
+func (m *model) isCompactFooterActive() bool {
+	return m.toggleFooter && (m.compactFooter || m.compactFooterForcedByHeight())
+}
+
+func (m *model) minimumRenderableHeight() int {
+	minHeight := filepanel.MinHeight
+	if m.toggleFooter {
+		minHeight++
+	}
+	return minHeight
 }
 
 func (m *model) updateComponentDimensions() tea.Cmd {
@@ -692,7 +708,7 @@ func (m *model) View() string {
 	}
 
 	// check is the terminal size enough
-	if m.fullHeight < common.MinimumHeight || m.fullWidth < common.MinimumWidth {
+	if m.fullHeight < m.minimumRenderableHeight() || m.fullWidth < common.MinimumWidth {
 		return m.terminalSizeWarnRender()
 	}
 	if m.fileModel.SinglePanelWidth < filepanel.MinWidth {
@@ -777,7 +793,7 @@ func (m *model) mainComponentsRender() string {
 		return mainPanel
 	}
 	var footer string
-	if m.compactFooter {
+	if m.isCompactFooterActive() {
 		footer = m.compactFooterLine()
 	} else {
 		system := m.systemPanelRender()

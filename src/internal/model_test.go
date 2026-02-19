@@ -420,3 +420,13 @@ func TestGitPanelClipboardTabScrollHotkeys(t *testing.T) {
 	out = ansi.Strip(m.gitPanel.Render(true))
 	assert.Contains(t, out, "2/2")
 }
+
+func TestSmallHeightForcesCompactFooterInsteadOfTerminalWarning(t *testing.T) {
+	curTestDir := t.TempDir()
+	m := defaultTestModelWithFooterAndFilePreview(curTestDir)
+
+	TeaUpdate(m, tea.WindowSizeMsg{Width: common.MinimumWidth, Height: 10})
+
+	assert.True(t, m.isCompactFooterActive())
+	assert.NotContains(t, m.View(), "Terminal size too small")
+}
