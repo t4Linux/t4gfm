@@ -201,8 +201,22 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 }
 
 func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
-	if msg == "C" || msg == "c" {
-		m.processBarModel.RequestCancelAll()
+	if msg == "C" {
+		if m.getFocusedFilePanel().IsFocused && m.fileModel.PanelCount() == 2 {
+			return m.getTransferToOtherPanelCmd(false)
+		}
+		m.notifyModel = notify.New(true, "Two panels required",
+			"Shift+C and Shift+M work only with exactly two open main panels and active file panel focus.",
+			notify.NoAction)
+		return nil
+	}
+	if msg == "M" {
+		if m.getFocusedFilePanel().IsFocused && m.fileModel.PanelCount() == 2 {
+			return m.getTransferToOtherPanelCmd(true)
+		}
+		m.notifyModel = notify.New(true, "Two panels required",
+			"Shift+C and Shift+M work only with exactly two open main panels and active file panel focus.",
+			notify.NoAction)
 		return nil
 	}
 
@@ -408,14 +422,15 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 			m.jumpToSidebarSectionList()
 		}
 	case "m":
-		if msg == "m" {
-			m.rangerPrefix = "mm"
+		if isMarkChar(msg) {
+			m.rangerPrefix = "m" + strings.ToLower(msg)
 			return nil
 		}
-	case "mm":
+	case "ma", "mb", "mc", "md", "me", "mf", "mg", "mh", "mi", "mj", "mk", "ml", "mm", "mn", "mo", "mp", "mq", "mr", "ms", "mt", "mu", "mv", "mw", "mx", "my", "mz":
 		if isMarkChar(msg) {
-			m.rangerPrefix = "mm" + strings.ToLower(msg)
-			return nil
+			key := strings.TrimPrefix(prefix, "m") + strings.ToLower(msg)
+			m.rangerMarks[key] = m.getFocusedFilePanel().Location
+			m.saveRangerMarks()
 		}
 	case ";":
 		if msg == "?" {
@@ -445,12 +460,6 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 		if isMarkChar(msg) {
 			key := strings.TrimPrefix(prefix, ";d") + strings.ToLower(msg)
 			delete(m.rangerMarks, key)
-			m.saveRangerMarks()
-		}
-	case "mma", "mmb", "mmc", "mmd", "mme", "mmf", "mmg", "mmh", "mmi", "mmj", "mmk", "mml", "mmm", "mmn", "mmo", "mmp", "mmq", "mmr", "mms", "mmt", "mmu", "mmv", "mmw", "mmx", "mmy", "mmz":
-		if isMarkChar(msg) {
-			key := strings.TrimPrefix(prefix, "mm") + strings.ToLower(msg)
-			m.rangerMarks[key] = m.getFocusedFilePanel().Location
 			m.saveRangerMarks()
 		}
 	case ";a", ";b", ";c", ";e", ";f", ";g", ";h", ";i", ";j", ";k", ";l", ";m", ";n", ";o", ";p", ";q", ";r", ";s", ";t", ";u", ";v", ";w", ";x", ";y", ";z":

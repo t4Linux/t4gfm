@@ -249,6 +249,11 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
+			hotkey:         []string{"C", "M"},
+			description:    "Copy/Move to second panel (2-panel layout)",
+			hotkeyWorkType: globalType,
+		},
+		{
 			hotkey:         []string{"yp", ""},
 			description:    "Copy current file or directory path",
 			hotkeyWorkType: globalType,
@@ -329,7 +334,7 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
-			hotkey:         []string{"C", ""},
+			hotkey:         []string{"ctrl+c", ""},
 			description:    "Cancel running copy/move operations",
 			hotkeyWorkType: globalType,
 		},

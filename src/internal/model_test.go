@@ -456,3 +456,26 @@ func TestSearchCanDropToFilteredListWithDownKey(t *testing.T) {
 	TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.Confirm[0]))
 	assert.Equal(t, betaDir, m.getFocusedFilePanel().Location)
 }
+
+func TestTwoPanelTransferHotkeyShowsInfoWhenPanelCountInvalid(t *testing.T) {
+	curTestDir := t.TempDir()
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("C"))
+
+	assert.True(t, m.notifyModel.IsOpen())
+	assert.Equal(t, "Two panels required", m.notifyModel.GetTitle())
+}
+
+func TestCtrlCCancelsRunningProcesses(t *testing.T) {
+	curTestDir := t.TempDir()
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+	m.processBarModel.AddOrUpdateProcess(processbar.Process{ID: "p1", State: processbar.InOperation, Done: 0, Total: 1})
+
+	startGeneration := m.processBarModel.CancelGeneration()
+	TeaUpdate(m, tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	assert.Greater(t, m.processBarModel.CancelGeneration(), startGeneration)
+}

@@ -27,12 +27,14 @@ func (msg BaseMessage) GetReqID() int {
 type PasteOperationMsg struct {
 	BaseMessage
 
-	state processbar.ProcessState
+	state      processbar.ProcessState
+	targetPath string
 }
 
-func NewPasteOperationMsg(state processbar.ProcessState, reqID int) PasteOperationMsg {
+func NewPasteOperationMsg(state processbar.ProcessState, reqID int, targetPath string) PasteOperationMsg {
 	return PasteOperationMsg{
-		state: state,
+		state:      state,
+		targetPath: targetPath,
 		BaseMessage: BaseMessage{
 			reqID: reqID,
 		},
@@ -42,6 +44,14 @@ func NewPasteOperationMsg(state processbar.ProcessState, reqID int) PasteOperati
 func (msg PasteOperationMsg) ApplyToModel(m *model) tea.Cmd {
 	if (msg.state == processbar.Failed || msg.state == processbar.Successful) && m.clipboard.IsCut() {
 		m.clipboard.Reset(false)
+	}
+	if msg.state == processbar.Successful && msg.targetPath != "" {
+		for i := range m.fileModel.FilePanels {
+			if m.fileModel.FilePanels[i].Location == msg.targetPath {
+				m.fileModel.FilePanels[i].UpdateElementsIfNeeded(true, m.fileModel.DisplayDotFiles)
+				break
+			}
+		}
 	}
 	return nil
 }

@@ -256,7 +256,50 @@ func (m *model) getPasteItemCmd() tea.Cmd {
 				reqID)
 		}
 		state := executePasteOperation(&m.processBarModel, panelLocation, copyItems, cut)
-		return NewPasteOperationMsg(state, reqID)
+		return NewPasteOperationMsg(state, reqID, panelLocation)
+	}
+}
+
+func (m *model) getTransferToOtherPanelCmd(cut bool) tea.Cmd {
+	if !m.getFocusedFilePanel().IsFocused || m.fileModel.PanelCount() != 2 {
+		return nil
+	}
+
+	srcPanel := m.getFocusedFilePanel()
+	if srcPanel.Empty() {
+		return nil
+	}
+
+	var items []string
+	if srcPanel.PanelMode == filepanel.SelectMode {
+		srcPanel.EnsureVisualSelection()
+		items = srcPanel.SelectedLocationsForCopy()
+	} else {
+		items = []string{srcPanel.GetFocusedItem().Location}
+	}
+	if len(items) == 0 {
+		return nil
+	}
+
+	destIndex := 1 - m.fileModel.FocusedPanelIndex
+	if destIndex < 0 || destIndex >= len(m.fileModel.FilePanels) {
+		return nil
+	}
+	destPath := m.fileModel.FilePanels[destIndex].Location
+
+	reqID := m.ioReqCnt
+	m.ioReqCnt++
+
+	slog.Debug("Submitting transfer-to-other-panel request", "id", reqID,
+		"items", len(items), "cut", cut, "dest", destPath)
+
+	return func() tea.Msg {
+		err := validatePasteOperation(destPath, items, cut)
+		if err != nil {
+			return NewNotifyModalMsg(notify.New(true, "Invalid transfer destination", err.Error(), notify.NoAction), reqID)
+		}
+		state := executePasteOperation(&m.processBarModel, destPath, items, cut)
+		return NewPasteOperationMsg(state, reqID, destPath)
 	}
 }
 
@@ -300,7 +343,7 @@ func (m *model) getPasteItemCmdWithOptions(overwrite bool, appendMode bool) tea.
 			return NewNotifyModalMsg(notify.New(true, "Invalid paste location", err.Error(), notify.NoAction), reqID)
 		}
 		state := executePasteOperationWithOptions(&m.processBarModel, panelLocation, copyItems, cut, overwrite, appendMode)
-		return NewPasteOperationMsg(state, reqID)
+		return NewPasteOperationMsg(state, reqID, panelLocation)
 	}
 }
 
@@ -501,7 +544,7 @@ func (m *model) getPasteLinkCmd(relative bool, hardlink bool) tea.Cmd {
 				break
 			}
 		}
-		return NewPasteOperationMsg(state, reqID)
+		return NewPasteOperationMsg(state, reqID, destDir)
 	}
 }
 
@@ -524,7 +567,7 @@ func (m *model) getPasteHardlinkedSubtreeCmd() tea.Cmd {
 				break
 			}
 		}
-		return NewPasteOperationMsg(state, reqID)
+		return NewPasteOperationMsg(state, reqID, destDir)
 	}
 }
 

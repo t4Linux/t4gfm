@@ -201,11 +201,10 @@ func (m *model) rangerPrefixMenuRender() string {
 			" sd - jump to Disks section\n" +
 			" sl - jump to top list section"
 	case "m":
-		lines = " mm - save current location under two-letter key"
-	case "mm":
-		lines = " mm? - first letter for location key (a-z)"
-	case "mma", "mmb", "mmc", "mmd", "mme", "mmf", "mmg", "mmh", "mmi", "mmj", "mmk", "mml", "mmm", "mmn", "mmo", "mmp", "mmq", "mmr", "mms", "mmt", "mmu", "mmv", "mmw", "mmx", "mmy", "mmz":
-		lines = " mm" + m.rangerPrefix[2:] + "? - second letter for location key (a-z)"
+		lines = " m?? - save current location under two-letter key\n" +
+			" example: mca"
+	case "ma", "mb", "mc", "md", "me", "mf", "mg", "mh", "mi", "mj", "mk", "ml", "mm", "mn", "mo", "mp", "mq", "mr", "ms", "mt", "mu", "mv", "mw", "mx", "my", "mz":
+		lines = " m" + m.rangerPrefix[1:] + "? - second letter for location key"
 	case ";":
 		lines = " ;? - list saved marks\n" +
 			" ;xy - jump to saved mark\n" +

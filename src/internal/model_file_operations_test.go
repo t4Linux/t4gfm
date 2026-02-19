@@ -68,6 +68,53 @@ func TestCopy(t *testing.T) {
 	})
 }
 
+func TestTwoPanelTransferShortcuts(t *testing.T) {
+	curTestDir := t.TempDir()
+	srcDir := filepath.Join(curTestDir, "src")
+	dstDir := filepath.Join(curTestDir, "dst")
+	fileCopy := filepath.Join(srcDir, "copy.txt")
+	fileMove := filepath.Join(srcDir, "move.txt")
+
+	utils.SetupDirectories(t, srcDir, dstDir)
+	utils.SetupFilesWithData(t, []byte("copy"), fileCopy, fileMove)
+
+	m := defaultTestModel(srcDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+
+	_, err := m.fileModel.CreateNewFilePanel(dstDir)
+	require.NoError(t, err)
+	m.fileModel.PreviousFilePanel()
+	TeaUpdate(m, nil)
+
+	setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), fileCopy)
+	p.SendKey("C")
+
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(dstDir, "copy.txt"))
+		return err == nil
+	}, DefaultTestTimeout, DefaultTestTick, "File should be copied to second panel location")
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePanels[1].FindElementIndexByLocation(filepath.Join(dstDir, "copy.txt")) != -1
+	}, DefaultTestTimeout, DefaultTestTick, "Destination panel should refresh and show copied file")
+	assert.FileExists(t, fileCopy)
+
+	TeaUpdate(m, nil)
+	setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), fileMove)
+	p.SendKey("M")
+
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(dstDir, "move.txt"))
+		return err == nil
+	}, DefaultTestTimeout, DefaultTestTick, "File should be moved to second panel location")
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePanels[1].FindElementIndexByLocation(filepath.Join(dstDir, "move.txt")) != -1
+	}, DefaultTestTimeout, DefaultTestTick, "Destination panel should refresh and show moved file")
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(fileMove)
+		return os.IsNotExist(err)
+	}, DefaultTestTimeout, DefaultTestTick, "Source file should be moved away")
+}
+
 func TestYankMenu(t *testing.T) {
 	curTestDir := t.TempDir()
 	file1 := filepath.Join(curTestDir, "file1.txt")
@@ -150,7 +197,6 @@ func TestRangerTwoLetterMarks(t *testing.T) {
 	TeaUpdate(m, nil)
 
 	TeaUpdate(m, utils.TeaRuneKeyMsg("m"))
-	TeaUpdate(m, utils.TeaRuneKeyMsg("m"))
 	TeaUpdate(m, utils.TeaRuneKeyMsg("c"))
 	TeaUpdate(m, utils.TeaRuneKeyMsg("a"))
 	assert.Equal(t, dirA, m.rangerMarks["ca"])
@@ -176,7 +222,6 @@ func TestRangerTwoLetterMarks(t *testing.T) {
 	_, ok := m.rangerMarks["ca"]
 	assert.False(t, ok)
 
-	TeaUpdate(m, utils.TeaRuneKeyMsg("m"))
 	TeaUpdate(m, utils.TeaRuneKeyMsg("m"))
 	TeaUpdate(m, utils.TeaRuneKeyMsg("c"))
 	TeaUpdate(m, utils.TeaRuneKeyMsg("a"))

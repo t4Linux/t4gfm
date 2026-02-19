@@ -33,6 +33,8 @@ Source: `src/t4gfm_config/hotkeys.toml`
 | file_panel_item_create | `a` | - |
 | file_panel_item_rename | `r` | - |
 | copy_items | `y` | - |
+| copy_to_other_panel | `C` | (2 panels) |
+| move_to_other_panel | `M` | (2 panels) |
 | cut_items | `x` | - |
 | delete_items | `delete` | - |
 | paste_items | `ctrl+v` | - |
