@@ -129,8 +129,28 @@ func (m *model) executeOpenCommand() tea.Cmd {
 		}
 		return nil
 	}
+	if common.ShouldPreferSystemOpen(filePath) {
+		if err := openPathWithDefaultApp(filePath); err != nil {
+			slog.Error("Error while opening file with system default app", "error", err)
+		}
+		return nil
+	}
 
 	return m.openFileWithEditor()
+}
+
+func openPathWithDefaultApp(path string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", path)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", path)
+	default:
+		cmd = exec.Command("xdg-open", path)
+	}
+	utils.DetachFromTerminal(cmd)
+	return cmd.Start()
 }
 
 func (m *model) openShellAtCurrentDir() tea.Cmd {

@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -35,7 +36,35 @@ func ResolveEnterOpenProgram(filePath string) string {
 	if extEditor, ok := Config.OpenWith[ext]; ok {
 		return extEditor
 	}
+	if ShouldPreferSystemOpen(filePath) {
+		return ResolveSystemOpenCommand()
+	}
 	return ResolveEditorCommand()
+}
+
+func ResolveSystemOpenCommand() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return "open"
+	case "windows":
+		return "start"
+	default:
+		return "xdg-open"
+	}
+}
+
+func ShouldPreferSystemOpen(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".pdf", ".epub",
+		".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".svg", ".ico",
+		".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v",
+		".mp3", ".wav", ".flac", ".ogg", ".m4a", ".opus",
+		".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp":
+		return true
+	default:
+		return false
+	}
 }
 
 func OpenBlockReason(filePath string) string {
