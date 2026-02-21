@@ -789,11 +789,29 @@ func (m *model) getExtractFileCmd() tea.Cmd {
 	if panel.Empty() {
 		return nil
 	}
+	return m.getExtractFileCmdForPath(panel.GetFocusedItem().Location)
+}
 
-	item := panel.GetFocusedItem().Location
+func (m *model) getExtractFileCmdForPath(item string) tea.Cmd {
+	return m.getExtractFileCmdForPathWithPassphrase(item, "")
+}
 
+func shouldPromptDecryptArchive(path string) bool {
+	return strings.HasSuffix(strings.ToLower(path), ".tar.gz.gpg")
+}
+
+func (m *model) getExtractFileCmdForPathWithPassphrase(item string, passphrase string) tea.Cmd {
+	if strings.TrimSpace(item) == "" {
+		return nil
+	}
+
+	encryptedArchive := shouldPromptDecryptArchive(item)
 	ext := strings.ToLower(filepath.Ext(item))
-	if !common.IsExtensionExtractable(ext) {
+	if !encryptedArchive && !common.IsExtensionExtractable(ext) {
+		m.notifyModel = notify.New(true,
+			"Extract unsupported",
+			"This archive type is not supported for extraction.",
+			notify.NoAction)
 		slog.Error("Error unexpected file", "extension type", ext, "item", item, "error", errors.ErrUnsupported)
 		return nil
 	}
@@ -803,6 +821,38 @@ func (m *model) getExtractFileCmd() tea.Cmd {
 	slog.Debug("Submitting Extract file request", "reqID", reqID, "item", item)
 
 	return func() tea.Msg {
+		sourceArchive := item
+		tmpDecryptPath := ""
+		if encryptedArchive {
+			secret := strings.TrimSpace(passphrase)
+			if secret == "" {
+				secret = strings.TrimSpace(os.Getenv("T4GFM_TAR_PASSPHRASE"))
+			}
+			if secret == "" {
+				m.notifyModel = notify.New(true,
+					"Missing passphrase",
+					"Enter passphrase or set T4GFM_TAR_PASSPHRASE",
+					notify.NoAction)
+				return NewExtractOperationMsg(processbar.Failed, reqID)
+			}
+
+			tmpFile, createErr := os.CreateTemp("", "t4gfm-decrypt-*.tar.gz")
+			if createErr != nil {
+				slog.Error("Error creating temp file for decrypt", "error", createErr)
+				return NewExtractOperationMsg(processbar.Failed, reqID)
+			}
+			tmpDecryptPath = tmpFile.Name()
+			_ = tmpFile.Close()
+
+			if err := decryptFileWithGPG(item, tmpDecryptPath, secret); err != nil {
+				_ = os.Remove(tmpDecryptPath)
+				slog.Error("Error decrypting archive", "error", err)
+				return NewExtractOperationMsg(processbar.Failed, reqID)
+			}
+			sourceArchive = tmpDecryptPath
+			defer os.Remove(tmpDecryptPath)
+		}
+
 		outputDir := common.FileNameWithoutExtension(item)
 		outputDir, err := renameIfDuplicate(outputDir)
 		if err != nil {
@@ -818,7 +868,7 @@ func (m *model) getExtractFileCmd() tea.Cmd {
 			slog.Error("Error while making directory for extracting files", "error", err)
 			return NewExtractOperationMsg(processbar.Failed, reqID)
 		}
-		err = extractCompressFile(item, outputDir, &m.processBarModel)
+		err = extractCompressFile(sourceArchive, outputDir, &m.processBarModel)
 		if err != nil {
 			slog.Error("Error extract file", "error", err)
 			return NewExtractOperationMsg(processbar.Failed, reqID)
@@ -828,6 +878,88 @@ func (m *model) getExtractFileCmd() tea.Cmd {
 }
 
 func (m *model) getCompressSelectedFilesCmd() tea.Cmd {
+	return m.getCompressSelectedFilesCmdWithFormat(compressFormatZip)
+}
+
+func (m *model) openEncryptArchivePrompt() {
+	panel := m.getFocusedFilePanel()
+	if panel.Empty() {
+		return
+	}
+
+	var firstFile string
+	if panel.SelectedCount() == 0 {
+		firstFile = panel.GetFocusedItem().Location
+	} else {
+		firstFile = panel.GetFirstSelectedLocation()
+	}
+
+	m.typingModal.location = panel.Location
+	m.typingModal.targetPath = ""
+	m.typingModal.mode = typingModalEncryptArchive
+	m.typingModal.open = true
+	m.typingModal.errorMesssage = ""
+	m.typingModal.textInput = common.GeneratePromptTextInput()
+	m.typingModal.textInput.Placeholder = "Enter passphrase for encrypted tar.gz"
+	_ = m.typingModal.textInput.Focus()
+	m.typingModal.textInput.Width = common.ModalWidth - 10
+	m.pendingEncryptPath = firstFile
+	m.firstTextInput = true
+}
+
+func (m *model) openDecryptArchivePrompt(path string) {
+	m.typingModal.location = filepath.Dir(path)
+	m.typingModal.targetPath = ""
+	m.typingModal.mode = typingModalDecryptArchive
+	m.typingModal.open = true
+	m.typingModal.errorMesssage = ""
+	m.typingModal.textInput = common.GeneratePromptTextInput()
+	m.typingModal.textInput.Placeholder = "Enter passphrase to decrypt archive"
+	_ = m.typingModal.textInput.Focus()
+	m.typingModal.textInput.Width = common.ModalWidth - 10
+	m.pendingExtractPath = path
+	m.firstTextInput = true
+}
+
+func nextCompressLevel(level string) string {
+	switch level {
+	case compressLevelFast:
+		return compressLevelBalanced
+	case compressLevelBalanced:
+		return compressLevelBest
+	default:
+		return compressLevelFast
+	}
+}
+
+func (m *model) toggleCompressVerbose() {
+	m.compressVerbose = !m.compressVerbose
+	state := "off"
+	if m.compressVerbose {
+		state = "on"
+	}
+	m.notifyModel = notify.New(true, "Compress verbose", "Verbose tar mode: "+state, notify.NoAction)
+}
+
+func (m *model) toggleCompressExclude() {
+	m.compressExclude = !m.compressExclude
+	state := "off"
+	if m.compressExclude {
+		state = "on"
+	}
+	m.notifyModel = notify.New(true, "Compress exclude", "Common excludes: "+state, notify.NoAction)
+}
+
+func (m *model) cycleCompressLevel() {
+	m.compressLevel = nextCompressLevel(m.compressLevel)
+	m.notifyModel = notify.New(true, "Compress level", "Current level: "+m.compressLevel, notify.NoAction)
+}
+
+func (m *model) getCompressSelectedFilesCmdWithFormat(format string) tea.Cmd {
+	return m.getCompressSelectedFilesCmdWithFormatAndPassphrase(format, "")
+}
+
+func (m *model) getCompressSelectedFilesCmdWithFormatAndPassphrase(format string, passphrase string) tea.Cmd {
 	panel := m.getFocusedFilePanel()
 
 	if panel.Empty() {
@@ -848,14 +980,78 @@ func (m *model) getCompressSelectedFilesCmd() tea.Cmd {
 	m.ioReqCnt++
 
 	return func() tea.Msg {
-		zipName, err := getZipArchiveName(filepath.Base(firstFile))
-		if err != nil {
-			slog.Error("Error in getZipArchiveName", "error", err)
-			return NewCompressOperationMsg(processbar.Failed, reqID)
-		}
-		zipPath := filepath.Join(panel.Location, zipName)
-		if err := zipSources(filesToCompress, zipPath, &m.processBarModel); err != nil {
-			slog.Error("Error in zipping files", "error", err)
+		switch format {
+		case compressFormatZip:
+			zipName, err := getZipArchiveName(filepath.Base(firstFile))
+			if err != nil {
+				slog.Error("Error in getZipArchiveName", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+			zipPath := filepath.Join(panel.Location, zipName)
+			if err := zipSources(filesToCompress, zipPath, &m.processBarModel); err != nil {
+				slog.Error("Error in zipping files", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+		case compressFormatTarGz, compressFormatTarXz, compressFormatTarZs:
+			tarName, err := getTarArchiveName(filepath.Base(firstFile), format)
+			if err != nil {
+				slog.Error("Error in getTarArchiveName", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+			tarPath := filepath.Join(panel.Location, tarName)
+			if err := tarSources(
+				filesToCompress,
+				panel.Location,
+				tarPath,
+				format,
+				m.compressLevel,
+				m.compressVerbose,
+				m.compressExclude,
+				&m.processBarModel,
+			); err != nil {
+				slog.Error("Error in tar compression", "error", err, "format", format)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+		case compressFormatTarGzEncrypted:
+			secret := strings.TrimSpace(passphrase)
+			if secret == "" {
+				secret = strings.TrimSpace(os.Getenv("T4GFM_TAR_PASSPHRASE"))
+			}
+
+			if secret == "" {
+				return NewNotifyModalMsg(notify.New(true,
+					"Missing passphrase",
+					"Set T4GFM_TAR_PASSPHRASE env var for encrypted tar.gz",
+					notify.NoAction), reqID)
+			}
+			targetName, err := getTarArchiveName(filepath.Base(firstFile), format)
+			if err != nil {
+				slog.Error("Error in get encrypted archive name", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+			targetPath := filepath.Join(panel.Location, targetName)
+			plainTarPath := filepath.Join(panel.Location, strings.TrimSuffix(targetName, ".gpg"))
+			if err := tarSources(
+				filesToCompress,
+				panel.Location,
+				plainTarPath,
+				compressFormatTarGz,
+				m.compressLevel,
+				m.compressVerbose,
+				m.compressExclude,
+				&m.processBarModel,
+			); err != nil {
+				slog.Error("Error creating temporary tar.gz for encryption", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+			if err := encryptFileWithGPG(plainTarPath, targetPath, secret); err != nil {
+				_ = os.Remove(plainTarPath)
+				slog.Error("Error encrypting tar.gz", "error", err)
+				return NewCompressOperationMsg(processbar.Failed, reqID)
+			}
+			_ = os.Remove(plainTarPath)
+		default:
+			slog.Error("Unknown compress format", "format", format)
 			return NewCompressOperationMsg(processbar.Failed, reqID)
 		}
 		return NewCompressOperationMsg(processbar.Successful, reqID)
@@ -887,6 +1083,10 @@ func (m *model) openFileWithEditor() tea.Cmd {
 		}
 		// Continue with preview if file is not writable
 		slog.Error("Error while writing to chooser file, continuing with open via file editor", "error", err)
+	}
+
+	if m.showExtractPromptForArchive(panel.GetFocusedItem().Location) {
+		return nil
 	}
 
 	if m.blockUnsafeOpenPath(panel.GetFocusedItem().Location) {

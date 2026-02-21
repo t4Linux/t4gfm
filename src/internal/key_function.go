@@ -330,7 +330,7 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 
 func isRangerPrefixStart(msg string) bool {
 	switch normalizeRangerPrefixStart(msg) {
-	case "y", "d", "p", "g", "o", "z", "m", ";", "s", "+", "-":
+	case "y", "d", "p", "g", "o", "z", "m", ";", "s", "c", "+", "-":
 		return true
 	default:
 		return false
@@ -441,6 +441,25 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 		if isMarkChar(msg) {
 			m.rangerPrefix = "m" + strings.ToLower(msg)
 			return nil
+		}
+	case "c":
+		switch msg {
+		case "z":
+			cmd = m.getCompressSelectedFilesCmdWithFormat(compressFormatZip)
+		case "t":
+			cmd = m.getCompressSelectedFilesCmdWithFormat(compressFormatTarGz)
+		case "j":
+			cmd = m.getCompressSelectedFilesCmdWithFormat(compressFormatTarXz)
+		case "l":
+			cmd = m.getCompressSelectedFilesCmdWithFormat(compressFormatTarZs)
+		case "E":
+			m.openEncryptArchivePrompt()
+		case "s":
+			m.cycleCompressLevel()
+		case "v":
+			m.toggleCompressVerbose()
+		case "e":
+			m.toggleCompressExclude()
 		}
 	case "+":
 		if isChmodClassChar(msg) {
@@ -656,6 +675,12 @@ func (m *model) typingModalOpenKey(msg string) tea.Cmd {
 		if m.typingModal.mode == typingModalOpenWith {
 			return m.confirmOpenWith()
 		}
+		if m.typingModal.mode == typingModalEncryptArchive {
+			return m.confirmEncryptArchive()
+		}
+		if m.typingModal.mode == typingModalDecryptArchive {
+			return m.confirmDecryptArchive()
+		}
 		m.createItem()
 	}
 	return nil
@@ -683,6 +708,8 @@ func (m *model) handleNotifyModelCancel(action notify.ConfirmActionType) tea.Cmd
 		m.cancelRename()
 	case notify.QuitAction:
 		m.modelQuitState = notQuitting
+	case notify.ExtractAction:
+		m.pendingExtractPath = ""
 	case notify.DeleteAction, notify.NoAction, notify.PermanentDeleteAction:
 		// Do nothing
 	default:
@@ -701,6 +728,14 @@ func (m *model) handleNotifyModelConfirm(action notify.ConfirmActionType) tea.Cm
 		m.confirmRename()
 	case notify.QuitAction:
 		m.modelQuitState = quitConfirmationReceived
+	case notify.ExtractAction:
+		path := m.pendingExtractPath
+		if shouldPromptDecryptArchive(path) {
+			m.openDecryptArchivePrompt(path)
+			return nil
+		}
+		m.pendingExtractPath = ""
+		return m.getExtractFileCmdForPath(path)
 	case notify.NoAction:
 		// Ignore
 	default:

@@ -82,6 +82,11 @@ type model struct {
 	rangerMarks          map[string]string
 	lastPaneTitle        string
 	compactFooter        bool
+	compressLevel        string
+	compressVerbose      bool
+	compressExclude      bool
+	pendingExtractPath   string
+	pendingEncryptPath   string
 	metadataDebouncePath string
 	metadataDebounceMode bool
 	metadataDebounceAt   time.Time
@@ -121,6 +126,8 @@ type typingModalMode int
 const (
 	typingModalCreate typingModalMode = iota
 	typingModalOpenWith
+	typingModalEncryptArchive
+	typingModalDecryptArchive
 )
 
 type editorFinishedMsg struct{ err error }

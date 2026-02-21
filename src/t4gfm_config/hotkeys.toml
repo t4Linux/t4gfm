@@ -56,7 +56,7 @@ paste_items = ['ctrl+v', '']
 permanently_delete_items = ['D', '']
 
 #-- Archive Manipulation
-compress_file = ['ctrl+a', '']
+compress_file = ['', '']
 extract_file = ['ctrl+e', '']
 
 #-- Editor Actions

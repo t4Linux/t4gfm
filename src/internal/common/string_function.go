@@ -213,13 +213,18 @@ func IsExtensionExtractable(ext string) bool {
 	validExtensions := map[string]struct{}{
 		".zip":     {},
 		".bz":      {},
+		".bz2":     {},
 		".gz":      {},
+		".xz":      {},
+		".zst":     {},
 		".iso":     {},
 		".rar":     {},
 		".7z":      {},
 		".tar":     {},
 		".tar.gz":  {},
 		".tar.bz2": {},
+		".tar.xz":  {},
+		".tar.zst": {},
 	}
 	_, exists := validExtensions[strings.ToLower(ext)]
 	return exists

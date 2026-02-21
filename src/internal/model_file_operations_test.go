@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/ui/filepanel"
 	"github.com/t4Linux/t4gfm/src/internal/ui/notify"
+	"github.com/t4Linux/t4gfm/src/internal/ui/processbar"
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
 
@@ -527,4 +529,159 @@ func TestRangerStyleChmodPrefix(t *testing.T) {
 	info, err = os.Stat(filePath)
 	require.NoError(t, err)
 	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+}
+
+func TestRangerCompressPrefix(t *testing.T) {
+	if _, err := exec.LookPath("tar"); err != nil {
+		t.Skip("tar command is required for compress prefix test")
+	}
+
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "sample.txt")
+	utils.SetupFilesWithData(t, []byte("content"), filePath)
+
+	m := defaultTestModel(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+
+	p.SendKey("c")
+	p.SendKey("z")
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(curTestDir, "sample.zip"))
+		return err == nil
+	}, DefaultTestTimeout, DefaultTestTick)
+
+	p.SendKey("c")
+	p.SendKey("t")
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(curTestDir, "sample.tar.gz"))
+		return err == nil
+	}, DefaultTestTimeout, DefaultTestTick)
+
+	p.SendKey("c")
+	p.SendKey("s")
+	assert.Eventually(t, func() bool {
+		return p.getModel().compressLevel == compressLevelBest
+	}, DefaultTestTimeout, DefaultTestTick)
+	p.getModel().notifyModel.Close()
+
+	p.SendKey("c")
+	p.SendKey("v")
+	assert.Eventually(t, func() bool {
+		return p.getModel().compressVerbose
+	}, DefaultTestTimeout, DefaultTestTick)
+	p.getModel().notifyModel.Close()
+
+	p.SendKey("c")
+	p.SendKey("e")
+	assert.Eventually(t, func() bool {
+		return p.getModel().compressExclude
+	}, DefaultTestTimeout, DefaultTestTick)
+	p.getModel().notifyModel.Close()
+
+	originalPassphrase, hadPassphrase := os.LookupEnv("T4GFM_TAR_PASSPHRASE")
+	_ = os.Unsetenv("T4GFM_TAR_PASSPHRASE")
+	t.Cleanup(func() {
+		if hadPassphrase {
+			_ = os.Setenv("T4GFM_TAR_PASSPHRASE", originalPassphrase)
+			return
+		}
+		_ = os.Unsetenv("T4GFM_TAR_PASSPHRASE")
+	})
+
+	m2 := defaultTestModel(curTestDir)
+	TeaUpdate(m2, nil)
+	TeaUpdate(m2, utils.TeaRuneKeyMsg("c"))
+	TeaUpdate(m2, utils.TeaRuneKeyMsg("E"))
+	require.True(t, m2.typingModal.open)
+	require.Equal(t, typingModalEncryptArchive, m2.typingModal.mode)
+	require.Equal(t, "", m2.typingModal.textInput.Value())
+	m2.typingModal.textInput.SetValue("")
+
+	TeaUpdate(m2, nil)
+	_ = m2.confirmEncryptArchive()
+	require.Equal(t, "passphrase cannot be empty", m2.typingModal.errorMesssage)
+
+	if _, err := exec.LookPath("gpg"); err == nil {
+		m2.typingModal.textInput.SetValue("secret-pass")
+		cmd := m2.confirmEncryptArchive()
+		require.NotNil(t, cmd)
+		msg := ExecuteTeaCmdWithTimeout(cmd, DefaultTestTimeout)
+		require.NotNil(t, msg)
+		TeaUpdate(m2, msg)
+		assert.False(t, m2.typingModal.open)
+	}
+}
+
+func TestArchiveOpenPromptsExtractAndConfirms(t *testing.T) {
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "sample.txt")
+	zipPath := filepath.Join(curTestDir, "sample.zip")
+	utils.SetupFilesWithData(t, []byte("content"), filePath)
+
+	processBar := processbar.New()
+	require.NoError(t, zipSources([]string{filePath}, zipPath, &processBar))
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+	setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), zipPath)
+
+	cmd := m.openFileWithEditor()
+	assert.Nil(t, cmd)
+	assert.True(t, m.notifyModel.IsOpen())
+	assert.Equal(t, "Archive detected", m.notifyModel.GetTitle())
+	assert.Equal(t, notify.ExtractAction, m.notifyModel.GetConfirmAction())
+
+	confirmCmd := m.handleNotifyModelConfirm(notify.ExtractAction)
+	require.NotNil(t, confirmCmd)
+	msg := ExecuteTeaCmdWithTimeout(confirmCmd, DefaultTestTimeout)
+	require.NotNil(t, msg)
+	TeaUpdate(m, msg)
+
+	extractedPath := filepath.Join(common.FileNameWithoutExtension(zipPath), "sample.txt")
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(extractedPath)
+		return err == nil
+	}, DefaultTestTimeout, DefaultTestTick)
+
+	if _, err := exec.LookPath("gpg"); err == nil {
+		encryptedPath := filepath.Join(curTestDir, "secret.tar.gz.gpg")
+		plainTarPath := filepath.Join(curTestDir, "secret.tar.gz")
+		require.NoError(t, tarSources(
+			[]string{filePath},
+			curTestDir,
+			plainTarPath,
+			compressFormatTarGz,
+			compressLevelBalanced,
+			false,
+			false,
+			&processBar,
+		))
+		require.NoError(t, encryptFileWithGPG(plainTarPath, encryptedPath, "secret-pass"))
+		require.NoError(t, os.Remove(plainTarPath))
+		m.fileModel.UpdateFilePanelsIfNeeded(true)
+		TeaUpdate(m, nil)
+
+		setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), encryptedPath)
+		cmd = m.openFileWithEditor()
+		assert.Nil(t, cmd)
+		assert.True(t, m.notifyModel.IsOpen())
+		assert.Equal(t, notify.ExtractAction, m.notifyModel.GetConfirmAction())
+
+		confirmCmd = m.handleNotifyModelConfirm(notify.ExtractAction)
+		assert.Nil(t, confirmCmd)
+		require.True(t, m.typingModal.open)
+		require.Equal(t, typingModalDecryptArchive, m.typingModal.mode)
+		m.typingModal.textInput.SetValue("secret-pass")
+		confirmCmd = m.confirmDecryptArchive()
+		require.NotNil(t, confirmCmd)
+		msg = ExecuteTeaCmdWithTimeout(confirmCmd, DefaultTestTimeout)
+		require.NotNil(t, msg)
+		TeaUpdate(m, msg)
+
+		extractedEncryptedPath := filepath.Join(common.FileNameWithoutExtension(encryptedPath), "sample.txt")
+		assert.Eventually(t, func() bool {
+			_, statErr := os.Stat(extractedEncryptedPath)
+			return statErr == nil
+		}, DefaultTestTimeout, DefaultTestTick)
+	}
 }

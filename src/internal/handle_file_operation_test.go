@@ -117,7 +117,8 @@ func TestCompressSelectedFiles(t *testing.T) {
 				m.getFocusedFilePanel().SetSelectedAll(tt.selectedElem)
 			}
 
-			p.SendKey(common.Hotkeys.CompressFile[0])
+			p.SendKey("c")
+			p.SendKey("z")
 
 			// This is a bit of an indirect validation, but there aren't many ways.
 			// We many add a process type later, and ensure that a process of
@@ -159,8 +160,9 @@ func TestCompressSelectedFiles(t *testing.T) {
 	}
 
 	t.Run("Compress on Empty panel", func(t *testing.T) {
-		NewTestTeaProgWithEventLoop(t, defaultTestModel(dir2)).
-			SendKey(common.Hotkeys.CompressFile[0])
+		p := NewTestTeaProgWithEventLoop(t, defaultTestModel(dir2))
+		p.SendKey("c")
+		p.SendKey("z")
 		// Should not crash. Nothing should happen. If there is a crash, it will be caught
 		entries, err := os.ReadDir(dir2)
 		require.NoError(t, err)

@@ -114,6 +114,9 @@ func (m *model) executeOpenCommand() tea.Cmd {
 	panel := m.getFocusedFilePanel()
 
 	filePath := panel.GetFocusedItem().Location
+	if m.showExtractPromptForArchive(filePath) {
+		return nil
+	}
 	if m.blockUnsafeOpenPath(filePath) {
 		return nil
 	}
@@ -140,6 +143,32 @@ func (m *model) openShellAtCurrentDir() tea.Cmd {
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
 		return editorFinishedMsg{err}
 	})
+}
+
+func shouldPromptArchiveExtract(filePath string) bool {
+	lowerPath := strings.ToLower(filePath)
+	if strings.HasSuffix(lowerPath, ".tar.gz") ||
+		strings.HasSuffix(lowerPath, ".tar.bz2") ||
+		strings.HasSuffix(lowerPath, ".tar.xz") ||
+		strings.HasSuffix(lowerPath, ".tar.zst") ||
+		strings.HasSuffix(lowerPath, ".tar.gz.gpg") {
+		return true
+	}
+	return common.IsExtensionExtractable(filepath.Ext(lowerPath))
+}
+
+func (m *model) showExtractPromptForArchive(filePath string) bool {
+	if !shouldPromptArchiveExtract(filePath) {
+		return false
+	}
+	m.pendingExtractPath = filePath
+	m.notifyModel = notify.New(
+		true,
+		"Archive detected",
+		"Extract now?",
+		notify.ExtractAction,
+	)
+	return true
 }
 
 func (m *model) openLazyGitIfRepo() tea.Cmd {

@@ -86,6 +86,14 @@ func (m *model) typineModalRender() string {
 		previewPath = m.typingModal.targetPath
 		confirmLabel = "Open"
 	}
+	if m.typingModal.mode == typingModalEncryptArchive {
+		previewPath = m.pendingEncryptPath
+		confirmLabel = "Compress"
+	}
+	if m.typingModal.mode == typingModalDecryptArchive {
+		previewPath = m.pendingExtractPath
+		confirmLabel = "Extract"
+	}
 
 	fileLocation := common.FilePanelTopDirectoryIconStyle.Render(" "+icon.Directory+icon.Space) +
 		common.FilePanelTopPathStyle.Render(
@@ -203,6 +211,18 @@ func (m *model) rangerPrefixMenuRender() string {
 	case "m":
 		lines = " m?? - save current location under two-letter key\n" +
 			" example: mca"
+	case "c":
+		lines = " cz - compress selected item(s) as .zip\n" +
+			" ct - compress selected item(s) as .tar.gz\n" +
+			" cj - compress selected item(s) as .tar.xz\n" +
+			" cl - compress selected item(s) as .tar.zst\n" +
+			" cE - compress selected item(s) as encrypted .tar.gz.gpg (asks passphrase)\n" +
+			" cs - cycle compression level (fast/balanced/best)\n" +
+			" cv - toggle verbose tar mode\n" +
+			" ce - toggle common excludes (.git, node_modules, *.tmp)\n\n" +
+			" current level: " + m.compressLevel + "\n" +
+			" verbose: " + strconv.FormatBool(m.compressVerbose) + "\n" +
+			" excludes: " + strconv.FormatBool(m.compressExclude)
 	case "+", "-":
 		actionWord := "add"
 		actionTitle := "add permissions"

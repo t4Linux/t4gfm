@@ -59,7 +59,7 @@ permanently_delete_items = ['D', '']
 
 #-- Archive Manipulation
 extract_file = ['ctrl+e', '']
-compress_file = ['ctrl+a', '']
+compress_file = ['', '']
 
 #-- Editor Actions
 open_file_with_editor = ['R', 'e']

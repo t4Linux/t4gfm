@@ -18,6 +18,8 @@ func (m *model) cancelTypingModal() {
 	m.typingModal.textInput.Blur()
 	m.typingModal.open = false
 	m.typingModal.targetPath = ""
+	m.pendingEncryptPath = ""
+	m.pendingExtractPath = ""
 	m.typingModal.mode = typingModalCreate
 }
 
@@ -86,6 +88,42 @@ func (m *model) confirmOpenWith() tea.Cmd {
 	m.typingModal.mode = typingModalCreate
 
 	return m.openFileWithCommand(command, targetPath)
+}
+
+func (m *model) confirmEncryptArchive() tea.Cmd {
+	passphrase := strings.TrimSpace(m.typingModal.textInput.Value())
+	if passphrase == "" {
+		m.typingModal.errorMesssage = "passphrase cannot be empty"
+		return nil
+	}
+
+	m.typingModal.errorMesssage = ""
+	m.typingModal.textInput.Blur()
+	m.typingModal.open = false
+	m.typingModal.targetPath = ""
+	m.typingModal.mode = typingModalCreate
+
+	cmd := m.getCompressSelectedFilesCmdWithFormatAndPassphrase(compressFormatTarGzEncrypted, passphrase)
+	m.pendingEncryptPath = ""
+	return cmd
+}
+
+func (m *model) confirmDecryptArchive() tea.Cmd {
+	passphrase := strings.TrimSpace(m.typingModal.textInput.Value())
+	if passphrase == "" {
+		m.typingModal.errorMesssage = "passphrase cannot be empty"
+		return nil
+	}
+
+	path := m.pendingExtractPath
+	m.typingModal.errorMesssage = ""
+	m.typingModal.textInput.Blur()
+	m.typingModal.open = false
+	m.typingModal.targetPath = ""
+	m.pendingExtractPath = ""
+	m.typingModal.mode = typingModalCreate
+
+	return m.getExtractFileCmdForPathWithPassphrase(path, passphrase)
 }
 
 // Cancel rename file or directory
