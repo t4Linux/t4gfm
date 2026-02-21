@@ -107,14 +107,19 @@ func (m *Model) renderImagePreview(r *rendering.Renderer, itemPath string, previ
 func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 	previewWidth, previewHeight int,
 ) string {
+	if isArchiveLikePath(itemPath) {
+		return r.AddLines(common.FilePreviewBinaryArchiveDisabledText).Render()
+	}
+
 	format := lexers.Match(filepath.Base(itemPath))
-	isText := true
 	if format == nil {
-		var err error
-		isText, err = common.IsTextFile(itemPath)
+		isText, err := common.IsTextFile(itemPath)
 		if err != nil {
 			slog.Error("Error while checking text file", "error", err)
 			return r.AddLines(common.FilePreviewError).Render()
+		}
+		if !isText && !isTextConfigPath(itemPath) {
+			return r.AddLines(common.FilePreviewUnsupportedFormatText).Render()
 		}
 	}
 
@@ -125,9 +130,6 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 	}
 
 	if fileContent == "" {
-		if format == nil && !isText && !isTextConfigPath(itemPath) {
-			return r.AddLines(common.FilePreviewUnsupportedFormatText).Render()
-		}
 		return r.AddLines(common.FilePreviewEmptyText).Render()
 	}
 
@@ -169,6 +171,25 @@ func isTextConfigPath(itemPath string) bool {
 	default:
 		return false
 	}
+}
+
+func isArchiveLikePath(itemPath string) bool {
+	lowerPath := strings.ToLower(itemPath)
+	archiveLikeSuffixes := []string{
+		".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst",
+		".tgz", ".tbz", ".tbz2", ".txz", ".tzst",
+		".deb", ".rpm", ".apk", ".pkg", ".msi", ".cab",
+		".zst", ".xz", ".lz4", ".lzma", ".bz2",
+	}
+	for _, suffix := range archiveLikeSuffixes {
+		if strings.HasSuffix(lowerPath, suffix) {
+			return true
+		}
+	}
+	if common.IsExtensionExtractable(filepath.Ext(lowerPath)) {
+		return true
+	}
+	return false
 }
 
 // Only use this when height and width are synced with filemodel's expectations

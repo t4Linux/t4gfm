@@ -188,3 +188,36 @@ func TestFilePreviewHighlightFailureFallback(t *testing.T) {
 
 	assert.Contains(t, out, "package main")
 }
+
+func TestArchivePreviewBlocked(t *testing.T) {
+	oldBinaryArchiveDisabled := common.FilePreviewBinaryArchiveDisabledText
+	common.FilePreviewBinaryArchiveDisabledText = "Binary/archive preview disabled for stability"
+	t.Cleanup(func() {
+		common.FilePreviewBinaryArchiveDisabledText = oldBinaryArchiveDisabled
+	})
+
+	testCases := []struct {
+		name    string
+		file    string
+		content []byte
+	}{
+		{name: "tar.gz", file: "data.tar.gz", content: []byte("\x1f\x8b\x08\x00\x00\x00")},
+		{name: "deb", file: "pkg.deb", content: []byte("!<arch>\n")},
+		{name: "rpm", file: "pkg.rpm", content: []byte("\xed\xab\xee\xdb")},
+		{name: "tar.xz", file: "data.tar.xz", content: []byte("\xfd7zXZ\x00")},
+		{name: "zst", file: "data.zst", content: []byte("\x28\xb5\x2f\xfd")},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			curTestDir := t.TempDir()
+			archivePath := filepath.Join(curTestDir, tc.file)
+			require.NoError(t, os.WriteFile(archivePath, tc.content, 0o644))
+
+			m := New()
+			out := ansi.Strip(m.RenderWithPath(archivePath, 80, 12, 80))
+
+			assert.Contains(t, out, "Binary/archive preview disabled for stability")
+		})
+	}
+}

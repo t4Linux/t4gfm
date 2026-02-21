@@ -55,6 +55,7 @@ var (
 	FilePreviewNoFileInfoText               string
 	FilePreviewNoContentText                string
 	FilePreviewUnsupportedFormatText        string
+	FilePreviewBinaryArchiveDisabledText    string
 	FilePreviewUnsupportedFileMode          string
 	FilePreviewDirectoryUnreadableText      string
 	FilePreviewEmptyText                    string
@@ -142,6 +143,8 @@ func LoadPrerenderedVariables() {
 		"Could not get file info")
 	FilePreviewUnsupportedFormatText = wrapFilePreviewErrorMsg(
 		"Unsupported formats")
+	FilePreviewBinaryArchiveDisabledText = wrapFilePreviewErrorMsg(
+		"Binary/archive preview disabled for stability")
 	FilePreviewUnsupportedFileMode = wrapFilePreviewErrorMsg(
 		"Unsupported File Mode")
 	FilePreviewDirectoryUnreadableText = wrapFilePreviewErrorMsg(
