@@ -304,5 +304,5 @@ func compressionLevelEnv(level string) []string {
 	case compressLevelBest:
 		value = "9"
 	}
-	return []string{"GZIP=" + value, "XZ_OPT=-" + value, "ZSTD_CLEVEL=" + value}
+	return []string{"GZIP=-" + value, "XZ_OPT=-" + value, "ZSTD_CLEVEL=" + value}
 }
