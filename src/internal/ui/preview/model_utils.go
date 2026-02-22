@@ -23,6 +23,12 @@ func (m *Model) SetOpen(open bool) {
 }
 
 func (m *Model) SetLocation(location string) {
+	if m.location != location {
+		m.textScroll = 0
+		m.hasMoreText = false
+		m.previewPos = 0
+		m.previewTotal = 0
+	}
 	m.location = location
 }
 
@@ -38,6 +44,36 @@ func (m *Model) setContent(content string, width int, height int, location strin
 	m.contentHeight = height
 	m.location = location
 	m.loading = false
+}
+
+func (m *Model) GetTextScroll() int {
+	return m.textScroll
+}
+
+func (m *Model) ScrollTextUp(lines int) bool {
+	if lines <= 0 || m.textScroll <= 0 {
+		return false
+	}
+	m.textScroll = max(0, m.textScroll-lines)
+	return true
+}
+
+func (m *Model) ScrollTextDown(lines int) bool {
+	if lines <= 0 || !m.hasMoreText {
+		return false
+	}
+	m.textScroll += lines
+	return true
+}
+
+func (m *Model) ScrollTextPageUp() bool {
+	page := max(1, m.contentHeight-2)
+	return m.ScrollTextUp(page)
+}
+
+func (m *Model) ScrollTextPageDown() bool {
+	page := max(1, m.contentHeight-2)
+	return m.ScrollTextDown(page)
 }
 
 func (m *Model) SetEmptyWithDimensions(width int, height int) {

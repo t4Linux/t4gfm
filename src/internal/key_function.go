@@ -71,6 +71,26 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 	case m.focusPanel == gitPanelFocus && msg == "L":
 		m.gitPanel.NextTab()
 
+	case m.focusPanel == nonePanelFocus && msg == "J" && m.fileModel.FilePreview.IsOpen():
+		if m.fileModel.FilePreview.ScrollTextDown(1) {
+			return m.fileModel.GetFilePreviewCmd(true)
+		}
+
+	case m.focusPanel == nonePanelFocus && msg == "K" && m.fileModel.FilePreview.IsOpen():
+		if m.fileModel.FilePreview.ScrollTextUp(1) {
+			return m.fileModel.GetFilePreviewCmd(true)
+		}
+
+	case m.focusPanel == nonePanelFocus && msg == "ctrl+d" && m.fileModel.FilePreview.IsOpen():
+		if m.fileModel.FilePreview.ScrollTextPageDown() {
+			return m.fileModel.GetFilePreviewCmd(true)
+		}
+
+	case m.focusPanel == nonePanelFocus && msg == "ctrl+u" && m.fileModel.FilePreview.IsOpen():
+		if m.fileModel.FilePreview.ScrollTextPageUp() {
+			return m.fileModel.GetFilePreviewCmd(true)
+		}
+
 	case slices.Contains(common.Hotkeys.PageUp, msg):
 		m.getFocusedFilePanel().PgUp()
 

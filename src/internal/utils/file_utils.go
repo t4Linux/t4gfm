@@ -257,28 +257,66 @@ func CreateFiles(files ...string) error {
 }
 
 func ReadFileContent(filepath string, maxLineLength int, previewLine int) (string, error) {
+	content, _, err := ReadFileContentWithOffset(filepath, maxLineLength, previewLine, 0)
+	return content, err
+}
+
+func ReadFileContentWithOffset(filepath string, maxLineLength int, previewLine int, offset int) (string, bool, error) {
 	var resultBuilder strings.Builder
 	file, err := os.Open(filepath)
 	if err != nil {
-		return resultBuilder.String(), err
+		return resultBuilder.String(), false, err
 	}
 	defer file.Close()
 
+	if offset < 0 {
+		offset = 0
+	}
+
 	reader := transform.NewReader(file, unicode.BOMOverride(unicode.UTF8.NewDecoder()))
 	scanner := bufio.NewScanner(reader)
+	lineIndex := 0
 	lineCount := 0
 	for scanner.Scan() {
+		if lineIndex < offset {
+			lineIndex++
+			continue
+		}
 		line := scanner.Text()
 		line = ansi.Truncate(line, maxLineLength, "")
 		resultBuilder.WriteString(line)
 		resultBuilder.WriteRune('\n')
 		lineCount++
+		lineIndex++
 		if previewLine > 0 && lineCount >= previewLine {
-			break
+			hasMore := scanner.Scan()
+			if scanErr := scanner.Err(); scanErr != nil {
+				return resultBuilder.String(), false, scanErr
+			}
+			return resultBuilder.String(), hasMore, nil
 		}
 	}
 	// returns the first non-EOF error that was encountered by the [Scanner]
-	return resultBuilder.String(), scanner.Err()
+	return resultBuilder.String(), false, scanner.Err()
+}
+
+func CountFileLines(filepath string) (int, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	reader := transform.NewReader(file, unicode.BOMOverride(unicode.UTF8.NewDecoder()))
+	scanner := bufio.NewScanner(reader)
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+	if scanErr := scanner.Err(); scanErr != nil {
+		return 0, scanErr
+	}
+	return count, nil
 }
 
 func InitJSONFile(path string) error {

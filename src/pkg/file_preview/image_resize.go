@@ -2,6 +2,7 @@ package filepreview
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"log/slog"
 
@@ -92,7 +93,85 @@ func adjustOrientation(img image.Image, orientation int) image.Image {
 }
 
 // resizeForANSI resizes image specifically for ANSI rendering
-func resizeForANSI(img image.Image, maxWidth, maxHeight int) image.Image {
-	// Use maxHeight*2 because each terminal row represents 2 pixel rows in ANSI rendering
-	return imaging.Fit(img, maxWidth, maxHeight*heightScaleFactor, imaging.Lanczos)
+func resizeForANSI(img image.Image, maxWidth, maxHeight, cellWidth, cellHeight int) image.Image {
+	width, height := computeANSITargetDimensions(
+		img.Bounds().Dx(),
+		img.Bounds().Dy(),
+		maxWidth,
+		maxHeight,
+		cellWidth,
+		cellHeight,
+	)
+	if width <= 0 || height <= 0 {
+		slog.Error("Invalid ANSI resize dimensions",
+			"width", width,
+			"height", height,
+			"maxWidth", maxWidth,
+			"maxHeight", maxHeight,
+			"cellWidth", cellWidth,
+			"cellHeight", cellHeight)
+		// Use maxHeight*2 because each terminal row represents 2 pixel rows in ANSI rendering
+		return imaging.Fit(img, maxWidth, maxHeight*heightScaleFactor, imaging.Lanczos)
+	}
+	return imaging.Resize(img, width, height, imaging.Lanczos)
+}
+
+func computeANSITargetDimensions(
+	originalWidth, originalHeight int,
+	maxWidth, maxHeight int,
+	cellWidth, cellHeight int,
+) (int, int) {
+	if originalWidth <= 0 || originalHeight <= 0 || maxWidth <= 0 || maxHeight <= 0 {
+		return 0, 0
+	}
+	if cellWidth <= 0 {
+		cellWidth = DefaultPixelsPerColumn
+	}
+	if cellHeight <= 0 {
+		cellHeight = DefaultPixelsPerRow
+	}
+
+	maxANSIHeight := maxHeight * heightScaleFactor
+
+	displayAdjustedRatio := (float64(originalWidth) / float64(originalHeight)) *
+		(float64(cellHeight) / (float64(heightScaleFactor) * float64(cellWidth)))
+
+	boxRatio := float64(maxWidth) / float64(maxANSIHeight)
+
+	var targetWidth, targetHeight int
+	if displayAdjustedRatio > boxRatio {
+		targetWidth = maxWidth
+		targetHeight = int(float64(targetWidth) / displayAdjustedRatio)
+	} else {
+		targetHeight = maxANSIHeight
+		targetWidth = int(float64(targetHeight) * displayAdjustedRatio)
+	}
+
+	if targetWidth < 1 {
+		targetWidth = 1
+	}
+	if targetHeight < 1 {
+		targetHeight = 1
+	}
+
+	if targetWidth > maxWidth {
+		return maxWidth, maxANSIHeight
+	}
+	if targetHeight > maxANSIHeight {
+		return maxWidth, maxANSIHeight
+	}
+
+	if targetWidth <= 0 || targetHeight <= 0 {
+		slog.Error("computeANSITargetDimensions generated invalid result",
+			"originalWidth", originalWidth,
+			"originalHeight", originalHeight,
+			"maxWidth", maxWidth,
+			"maxHeight", maxHeight,
+			"cellWidth", cellWidth,
+			"cellHeight", cellHeight,
+			"target", fmt.Sprintf("%dx%d", targetWidth, targetHeight))
+		return maxWidth, maxANSIHeight
+	}
+
+	return targetWidth, targetHeight
 }

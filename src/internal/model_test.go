@@ -296,6 +296,12 @@ func TestChooserFile(t *testing.T) {
 	}
 }
 
+func TestEditorFinishedMsgReenablesMouse(t *testing.T) {
+	m := defaultTestModel(t.TempDir())
+	_, cmd := m.Update(editorFinishedMsg{})
+	assert.NotNil(t, cmd)
+}
+
 func eventuallyEnsurePreviewContent(t *testing.T, m *model, content string, msgAndArgs ...any) {
 	contains := false
 	assert.Eventually(t, func() bool {

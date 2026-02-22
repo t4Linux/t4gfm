@@ -53,8 +53,9 @@ func (m *model) panelOpenWithPrompt() {
 	m.typingModal.textInput = common.GeneratePromptTextInput()
 	_ = m.typingModal.textInput.Focus()
 	m.typingModal.textInput.Width = common.ModalWidth - 10
-	m.typingModal.textInput.SetValue(common.ResolveEnterOpenProgram(targetPath))
-	m.firstTextInput = false
+	m.typingModal.textInput.Placeholder = "Enter program command"
+	m.typingModal.textInput.SetValue("")
+	m.firstTextInput = true
 }
 
 func (m *model) applyChmodSymbol(symbol string) {

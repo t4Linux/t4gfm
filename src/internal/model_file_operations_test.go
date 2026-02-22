@@ -473,6 +473,55 @@ func TestDeleteFromSelectModeExitsToBrowserMode(t *testing.T) {
 	}, DefaultTestTimeout, DefaultTestTick, "Panel mode did not switch back to browser mode")
 }
 
+func TestDeleteLastItemKeepsCursorNearEnd(t *testing.T) {
+	curTestDir := t.TempDir()
+	fileA := filepath.Join(curTestDir, "a.txt")
+	fileB := filepath.Join(curTestDir, "b.txt")
+	fileC := filepath.Join(curTestDir, "c.txt")
+	utils.SetupFilesWithData(t, []byte("a"), fileA)
+	utils.SetupFilesWithData(t, []byte("b"), fileB)
+	utils.SetupFilesWithData(t, []byte("c"), fileC)
+
+	m := defaultTestModel(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), fileC)
+
+	p.SendKey(common.Hotkeys.PermanentlyDeleteItems[0])
+	assert.Eventually(t, m.notifyModel.IsOpen, DefaultTestTimeout, DefaultTestTick)
+	p.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	assert.Eventually(t, func() bool {
+		_, err := os.Stat(fileC)
+		return os.IsNotExist(err)
+	}, DefaultTestTimeout, DefaultTestTick)
+
+	assert.Eventually(t, func() bool {
+		panel := m.getFocusedFilePanel()
+		if panel.ElemCount() != 2 {
+			return false
+		}
+		if panel.GetCursor() != 1 {
+			return false
+		}
+		return panel.GetFocusedItem().Name == "b.txt"
+	}, DefaultTestTimeout, DefaultTestTick)
+}
+
+func TestOpenWithPromptStartsEmpty(t *testing.T) {
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "openme.txt")
+	utils.SetupFilesWithData(t, []byte("data"), filePath)
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.OpenFileWithEditor[0]))
+
+	assert.True(t, m.typingModal.open)
+	assert.Equal(t, typingModalOpenWith, m.typingModal.mode)
+	assert.Equal(t, "", m.typingModal.textInput.Value())
+}
+
 func TestRangerStyleChmodPrefix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("chmod shortcut test is Unix-specific")

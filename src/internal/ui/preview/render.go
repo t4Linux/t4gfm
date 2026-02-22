@@ -2,6 +2,7 @@ package preview
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"io/fs"
 	"log/slog"
@@ -21,17 +22,30 @@ import (
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
 
-func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeight int) string {
+func applyPreviewPositionInfo(r *rendering.Renderer, pos int, total int) {
+	if total <= 0 {
+		return
+	}
+	if pos < 1 {
+		pos = 1
+	}
+	if pos > total {
+		pos = total
+	}
+	r.SetBorderInfoItems(fmt.Sprintf("preview %d/%d", pos, total))
+}
+
+func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeight int, offset int) (string, bool, int, int) {
 	files, err := os.ReadDir(itemPath)
 	if err != nil {
 		slog.Error("Error render directory preview", "error", err)
 		r.AddLines(common.FilePreviewDirectoryUnreadableText)
-		return r.Render()
+		return r.Render(), false, 0, 0
 	}
 
 	if len(files) == 0 {
 		r.AddLines(common.FilePreviewEmptyText)
-		return r.Render()
+		return r.Render(), false, 0, 0
 	}
 
 	sort.Slice(files, func(i, j int) bool {
@@ -54,7 +68,14 @@ func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeigh
 	if maxRows < 0 {
 		maxRows = 0
 	}
-	for i := 0; i < maxRows && i < len(files); i++ {
+	if offset < 0 {
+		offset = 0
+	}
+	start := min(offset, len(files))
+	end := min(start+maxRows, len(files))
+	current := min(start+1, len(files))
+	applyPreviewPositionInfo(r, current, len(files))
+	for i := start; i < end; i++ {
 		file := files[i]
 		isLink := false
 		if info, err := file.Info(); err == nil {
@@ -65,7 +86,7 @@ func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeigh
 			Render(style.Icon+" ") + common.FilePanelStyle.Render(file.Name())
 		r.AddLines(res)
 	}
-	return r.Render()
+	return r.Render(), end < len(files), current, len(files)
 }
 
 func (m *Model) renderImagePreview(r *rendering.Renderer, itemPath string, previewWidth,
@@ -123,13 +144,46 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 		}
 	}
 
-	fileContent, err := utils.ReadFileContent(itemPath, previewWidth, previewHeight)
+	fileContent, hasMore, err := utils.ReadFileContentWithOffset(itemPath, previewWidth, previewHeight, m.textScroll)
 	if err != nil {
 		slog.Error("Error open file", "error", err)
+		m.hasMoreText = false
+		m.previewPos = 0
+		m.previewTotal = 0
 		return r.AddLines(common.FilePreviewError).Render()
 	}
+	m.hasMoreText = hasMore
+	totalLines, lineErr := utils.CountFileLines(itemPath)
+	if lineErr != nil {
+		totalLines = 0
+	}
+	current := 0
+	if totalLines > 0 {
+		current = min(m.textScroll+1, totalLines)
+	}
+	m.previewPos = current
+	m.previewTotal = totalLines
+	applyPreviewPositionInfo(r, current, totalLines)
 
 	if fileContent == "" {
+		if m.textScroll > 0 {
+			m.textScroll--
+			fileContent, hasMore, err = utils.ReadFileContentWithOffset(itemPath, previewWidth, previewHeight, m.textScroll)
+			if err == nil && fileContent != "" {
+				m.hasMoreText = hasMore
+				if totalLines > 0 {
+					current = min(m.textScroll+1, totalLines)
+					m.previewPos = current
+				}
+			} else if err == nil {
+				m.hasMoreText = false
+			}
+		}
+		if fileContent != "" {
+			r.AddLines(fileContent)
+			return r.Render()
+		}
+		m.hasMoreText = false
 		return r.AddLines(common.FilePreviewEmptyText).Render()
 	}
 
@@ -212,6 +266,9 @@ func (m *Model) RenderTextWithDimension(text string, height int, width int) stri
 func (m *Model) RenderWithPath(itemPath string, previewWidth int, previewHeight int, fullModelWidth int) string {
 	r := ui.FilePreviewPanelRenderer(previewHeight, previewWidth)
 	clearCmd := m.imagePreviewer.ClearKittyImages()
+	m.hasMoreText = false
+	m.previewPos = 0
+	m.previewTotal = 0
 
 	// Adjust dimensions if border is enabled
 	contentWidth := previewWidth
@@ -255,7 +312,11 @@ func (m *Model) RenderWithPath(itemPath string, previewWidth int, previewHeight 
 	}
 
 	if fileInfo.IsDir() {
-		return renderDirectoryPreview(r, resolvedPath, contentHeight) + clearCmd
+		rendered, hasMore, current, total := renderDirectoryPreview(r, resolvedPath, contentHeight, m.textScroll)
+		m.hasMoreText = hasMore
+		m.previewPos = current
+		m.previewTotal = total
+		return rendered + clearCmd
 	}
 
 	if m.thumbnailGenerator != nil && m.thumbnailGenerator.SupportsExt(ext) {

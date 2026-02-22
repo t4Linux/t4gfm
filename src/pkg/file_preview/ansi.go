@@ -49,8 +49,8 @@ func (p *ImagePreviewer) ANSIRenderer(img image.Image, defaultBGColor string,
 		return "", fmt.Errorf("invalid background color: %w", err)
 	}
 
-	// For ANSI rendering, resize image appropriately
-	fittedImg := resizeForANSI(img, maxWidth, maxHeight)
+	cellSize := p.terminalCap.GetTerminalCellSize()
+	fittedImg := resizeForANSI(img, maxWidth, maxHeight, cellSize.PixelsPerColumn, cellSize.PixelsPerRow)
 	return ConvertImageToANSI(fittedImg, bgColor), nil
 }
 

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"image/color"
 	"log/slog"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -82,6 +84,13 @@ func (tc *TerminalCapabilities) detectTerminalCellSize() TerminalCellSize {
 	tc.detectionMutex.Lock()
 	defer tc.detectionMutex.Unlock()
 
+	if cellSize, ok := getTerminalCellSizeFromEnv(); ok {
+		slog.Info("Using terminal cell size from env override",
+			"pixels_per_column", cellSize.PixelsPerColumn,
+			"pixels_per_row", cellSize.PixelsPerRow)
+		return cellSize
+	}
+
 	if cellSize, ok := getTerminalCellSizeViaIoctl(); ok {
 		slog.Info("Successfully detected terminal cell size via ioctl",
 			"pixels_per_column", cellSize.PixelsPerColumn,
@@ -100,6 +109,46 @@ func getDefaultCellSize() TerminalCellSize {
 		PixelsPerColumn: DefaultPixelsPerColumn,
 		PixelsPerRow:    DefaultPixelsPerRow,
 	}
+}
+
+func getTerminalCellSizeFromEnv() (TerminalCellSize, bool) {
+	override := strings.TrimSpace(os.Getenv("T4GFM_PREVIEW_CELL_SIZE"))
+	if override != "" {
+		if cellSize, err := parseCellSizeOverride(override); err == nil {
+			return cellSize, true
+		}
+	}
+
+	widthValue := strings.TrimSpace(os.Getenv("T4GFM_PREVIEW_CELL_WIDTH"))
+	heightValue := strings.TrimSpace(os.Getenv("T4GFM_PREVIEW_CELL_HEIGHT"))
+	if widthValue == "" || heightValue == "" {
+		return TerminalCellSize{}, false
+	}
+
+	width, widthErr := strconv.Atoi(widthValue)
+	height, heightErr := strconv.Atoi(heightValue)
+	if widthErr != nil || heightErr != nil || width <= 0 || height <= 0 {
+		return TerminalCellSize{}, false
+	}
+
+	return TerminalCellSize{PixelsPerColumn: width, PixelsPerRow: height}, true
+}
+
+func parseCellSizeOverride(value string) (TerminalCellSize, error) {
+	parts := strings.FieldsFunc(value, func(r rune) bool {
+		return r == 'x' || r == 'X' || r == ':' || r == ',' || r == ';'
+	})
+	if len(parts) != 2 {
+		return TerminalCellSize{}, fmt.Errorf("invalid override format")
+	}
+
+	width, widthErr := strconv.Atoi(strings.TrimSpace(parts[0]))
+	height, heightErr := strconv.Atoi(strings.TrimSpace(parts[1]))
+	if widthErr != nil || heightErr != nil || width <= 0 || height <= 0 {
+		return TerminalCellSize{}, fmt.Errorf("invalid override values")
+	}
+
+	return TerminalCellSize{PixelsPerColumn: width, PixelsPerRow: height}, nil
 }
 
 // InitTerminalCapabilities initializes terminal capabilities for the ImagePreviewer

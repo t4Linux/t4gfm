@@ -17,6 +17,10 @@ type Model struct {
 	content       string
 	contentWidth  int
 	contentHeight int
+	textScroll    int
+	hasMoreText   bool
+	previewPos    int
+	previewTotal  int
 
 	loading            bool
 	imagePreviewer     *filepreview.ImagePreviewer

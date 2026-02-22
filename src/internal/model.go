@@ -114,6 +114,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		slog.Debug("Got ModelUpdate message", "id", msg.GetReqID())
 		updateCmd = msg.ApplyToModel(m)
 	case metadataDebounceMsg:
+	case editorFinishedMsg:
+		if msg.err != nil {
+			slog.Error("External process finished with error", "error", msg.err)
+		}
+		inputCmd = tea.EnableMouseCellMotion
 	case clockTickMsg:
 		clockCmd = nextClockTickCmd()
 

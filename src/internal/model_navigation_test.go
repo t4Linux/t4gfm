@@ -203,7 +203,7 @@ func TestCursorOutOfBoundsAfterDirectorySwitch(t *testing.T) {
 
 	// Navigate back to dir1 (this restores cursor=8 from cache)
 	navigateToTargetDir(t, m, dir2, dir1)
-	assert.Equal(t, 0, panel.GetCursor(), "Cursor not restored as is from directoryRecords cache")
+	assert.Equal(t, 3, panel.GetCursor(), "Cursor should clamp near previous position when entries shrink")
 	assert.NoError(t, panel.ValidateCursorAndRenderIndex(), "panel not valid")
 }
 

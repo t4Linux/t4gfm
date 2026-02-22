@@ -104,7 +104,12 @@ func (m *Model) UpdateElementsIfNeeded(force bool, displayDotFile bool) {
 
 		// If cursor becomes invalid due to element update, reset
 		if m.ValidateCursorAndRenderIndex() != nil {
-			m.scrollToCursor(0)
+			if m.ElemCount() == 0 {
+				m.cursor = 0
+				m.renderIndex = 0
+			} else {
+				m.scrollToCursor(m.ElemCount() - 1)
+			}
 		}
 	}
 }

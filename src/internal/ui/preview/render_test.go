@@ -221,3 +221,45 @@ func TestArchivePreviewBlocked(t *testing.T) {
 		})
 	}
 }
+
+func TestTextPreviewScroll(t *testing.T) {
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "scroll.txt")
+	require.NoError(t, os.WriteFile(filePath, []byte("one\ntwo\nthree\nfour\n"), 0o644))
+
+	m := New()
+	first := ansi.Strip(m.RenderWithPath(filePath, 10, 2, 10))
+	assert.Equal(t, "one       \ntwo       ", first)
+
+	assert.True(t, m.ScrollTextDown(1))
+	second := ansi.Strip(m.RenderWithPath(filePath, 10, 2, 10))
+	assert.Equal(t, "two       \nthree     ", second)
+
+	assert.True(t, m.ScrollTextPageDown())
+	third := ansi.Strip(m.RenderWithPath(filePath, 10, 2, 10))
+	assert.Equal(t, "three     \nfour      ", third)
+
+	assert.True(t, m.ScrollTextUp(1))
+	fourth := ansi.Strip(m.RenderWithPath(filePath, 10, 2, 10))
+	assert.Equal(t, "two       \nthree     ", fourth)
+}
+
+func TestPreviewIndicatorShowsPosition(t *testing.T) {
+	oldBorder := common.Config.EnableFilePreviewBorder
+	common.Config.EnableFilePreviewBorder = true
+	t.Cleanup(func() {
+		common.Config.EnableFilePreviewBorder = oldBorder
+	})
+
+	curTestDir := t.TempDir()
+	filePath := filepath.Join(curTestDir, "indicator.txt")
+	require.NoError(t, os.WriteFile(filePath, []byte("a\nb\nc\nd\ne\nf\n"), 0o644))
+
+	m := New()
+	out := ansi.Strip(m.RenderWithPath(filePath, 20, 6, 20))
+	assert.Contains(t, out, "preview 1/6")
+
+	assert.True(t, m.ScrollTextDown(1))
+	out = ansi.Strip(m.RenderWithPath(filePath, 20, 6, 20))
+	assert.Contains(t, out, "preview 2/6")
+}
