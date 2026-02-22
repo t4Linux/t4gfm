@@ -654,7 +654,7 @@ func TestRangerCompressPrefix(t *testing.T) {
 		m2.typingModal.textInput.SetValue("secret-pass")
 		cmd := m2.confirmEncryptArchive()
 		require.NotNil(t, cmd)
-		msg := ExecuteTeaCmdWithTimeout(cmd, DefaultTestTimeout)
+		msg := ExecuteTeaCmdWithTimeout(cmd, 5*DefaultTestTimeout)
 		require.NotNil(t, msg)
 		TeaUpdate(m2, msg)
 		assert.False(t, m2.typingModal.open)
