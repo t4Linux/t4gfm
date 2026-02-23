@@ -1,6 +1,7 @@
 package preview
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -201,11 +202,9 @@ func TestArchivePreviewBlocked(t *testing.T) {
 		file    string
 		content []byte
 	}{
-		{name: "tar.gz", file: "data.tar.gz", content: []byte("\x1f\x8b\x08\x00\x00\x00")},
 		{name: "deb", file: "pkg.deb", content: []byte("!<arch>\n")},
 		{name: "rpm", file: "pkg.rpm", content: []byte("\xed\xab\xee\xdb")},
-		{name: "tar.xz", file: "data.tar.xz", content: []byte("\xfd7zXZ\x00")},
-		{name: "zst", file: "data.zst", content: []byte("\x28\xb5\x2f\xfd")},
+		{name: "msi", file: "pkg.msi", content: []byte("\xd0\xcf\x11\xe0")},
 	}
 
 	for _, tc := range testCases {
@@ -220,6 +219,31 @@ func TestArchivePreviewBlocked(t *testing.T) {
 			assert.Contains(t, out, "Binary/archive preview disabled for stability")
 		})
 	}
+}
+
+func TestArchivePreviewListsZipEntries(t *testing.T) {
+	curTestDir := t.TempDir()
+	archivePath := filepath.Join(curTestDir, "data.zip")
+	zipFile, err := os.Create(archivePath)
+	require.NoError(t, err)
+
+	zipWriter := zip.NewWriter(zipFile)
+	f1, err := zipWriter.Create("dir/a.txt")
+	require.NoError(t, err)
+	_, err = f1.Write([]byte("A"))
+	require.NoError(t, err)
+	f2, err := zipWriter.Create("dir/b.txt")
+	require.NoError(t, err)
+	_, err = f2.Write([]byte("B"))
+	require.NoError(t, err)
+	require.NoError(t, zipWriter.Close())
+	require.NoError(t, zipFile.Close())
+
+	m := New()
+	out := ansi.Strip(m.RenderWithPath(archivePath, 80, 12, 80))
+
+	assert.Contains(t, out, "dir/a.txt")
+	assert.Contains(t, out, "dir/b.txt")
 }
 
 func TestTextPreviewScroll(t *testing.T) {

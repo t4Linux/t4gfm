@@ -1,12 +1,19 @@
 package preview
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bufio"
+	"compress/bzip2"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"image"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -129,7 +136,7 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 	previewWidth, previewHeight int,
 ) string {
 	if isArchiveLikePath(itemPath) {
-		return r.AddLines(common.FilePreviewBinaryArchiveDisabledText).Render()
+		return m.renderArchivePreview(r, itemPath, previewHeight)
 	}
 
 	format := lexers.Match(filepath.Base(itemPath))
@@ -215,6 +222,131 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 
 	r.AddLines(fileContent)
 	return r.Render()
+}
+
+func (m *Model) renderArchivePreview(r *rendering.Renderer, itemPath string, previewHeight int) string {
+	entries, err := listArchiveEntries(itemPath)
+	if err != nil {
+		slog.Error("Error listing archive preview", "path", itemPath, "error", err)
+		m.hasMoreText = false
+		m.previewPos = 0
+		m.previewTotal = 0
+		return r.AddLines(common.FilePreviewBinaryArchiveDisabledText).Render()
+	}
+	if len(entries) == 0 {
+		m.hasMoreText = false
+		m.previewPos = 0
+		m.previewTotal = 0
+		return r.AddLines(common.FilePreviewEmptyText).Render()
+	}
+
+	if m.textScroll < 0 {
+		m.textScroll = 0
+	}
+	start := min(m.textScroll, len(entries))
+	end := min(start+previewHeight, len(entries))
+	current := min(start+1, len(entries))
+	m.hasMoreText = end < len(entries)
+	m.previewPos = current
+	m.previewTotal = len(entries)
+	applyPreviewPositionInfo(r, current, len(entries))
+
+	for i := start; i < end; i++ {
+		r.AddLines(entries[i])
+	}
+	return r.Render()
+}
+
+func listArchiveEntries(itemPath string) ([]string, error) {
+	lowerPath := strings.ToLower(itemPath)
+
+	if strings.HasSuffix(lowerPath, ".zip") {
+		return listZipEntries(itemPath)
+	}
+	if strings.HasSuffix(lowerPath, ".tar") {
+		file, err := os.Open(itemPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		return listTarEntries(tar.NewReader(file))
+	}
+	if strings.HasSuffix(lowerPath, ".tar.gz") || strings.HasSuffix(lowerPath, ".tgz") {
+		file, err := os.Open(itemPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		gzReader, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, err
+		}
+		defer gzReader.Close()
+		return listTarEntries(tar.NewReader(gzReader))
+	}
+	if strings.HasSuffix(lowerPath, ".tar.bz2") || strings.HasSuffix(lowerPath, ".tbz") || strings.HasSuffix(lowerPath, ".tbz2") {
+		file, err := os.Open(itemPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		bzReader := bzip2.NewReader(file)
+		return listTarEntries(tar.NewReader(bzReader))
+	}
+
+	return listArchiveEntriesWithTar(itemPath)
+}
+
+func listZipEntries(itemPath string) ([]string, error) {
+	zipReader, err := zip.OpenReader(itemPath)
+	if err != nil {
+		return nil, err
+	}
+	defer zipReader.Close()
+
+	entries := make([]string, 0, len(zipReader.File))
+	for _, f := range zipReader.File {
+		entries = append(entries, f.Name)
+	}
+	return entries, nil
+}
+
+func listTarEntries(reader *tar.Reader) ([]string, error) {
+	entries := []string{}
+	for {
+		header, err := reader.Next()
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, header.Name)
+	}
+}
+
+func listArchiveEntriesWithTar(itemPath string) ([]string, error) {
+	if _, err := exec.LookPath("tar"); err != nil {
+		return nil, err
+	}
+	cmd := exec.Command("tar", "-tf", itemPath)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	entries := []string{}
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		entries = append(entries, line)
+	}
+	if scanErr := scanner.Err(); scanErr != nil {
+		return nil, scanErr
+	}
+	return entries, nil
 }
 
 func isTextConfigPath(itemPath string) bool {
