@@ -346,6 +346,9 @@ func listArchiveEntriesWithTar(itemPath string) ([]string, error) {
 	if scanErr := scanner.Err(); scanErr != nil {
 		return nil, scanErr
 	}
+	if len(entries) == 0 {
+		return nil, errors.New("archive listing is empty")
+	}
 	return entries, nil
 }
 
