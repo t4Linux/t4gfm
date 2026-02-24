@@ -30,7 +30,7 @@ import (
 )
 
 func applyPreviewPositionInfo(r *rendering.Renderer, pos int, total int) {
-	if total <= 0 {
+	if !common.Config.EnableFilePreviewBorder || total <= 0 {
 		return
 	}
 	if pos < 1 {
@@ -39,7 +39,7 @@ func applyPreviewPositionInfo(r *rendering.Renderer, pos int, total int) {
 	if pos > total {
 		pos = total
 	}
-	r.SetBorderInfoItems(fmt.Sprintf("preview %d/%d", pos, total))
+	r.SetBorderTitle(fmt.Sprintf("preview %d/%d", pos, total))
 }
 
 func renderDirectoryPreview(r *rendering.Renderer, itemPath string, previewHeight int, offset int) (string, bool, int, int) {

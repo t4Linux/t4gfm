@@ -10,7 +10,6 @@ import (
 
 	"github.com/t4Linux/t4gfm/src/internal/ui/filepanel"
 
-	"github.com/t4Linux/t4gfm/src/internal/common"
 	"github.com/t4Linux/t4gfm/src/internal/ui/processbar"
 	"github.com/t4Linux/t4gfm/src/internal/utils"
 )
@@ -137,7 +136,11 @@ func TestCompressSelectedFiles(t *testing.T) {
 			require.False(t, fileInfo.IsDir(),
 				"Panel location for extraction is a directory, expected a zip file: %s", selectedItemLocation)
 
-			p.SendKey(common.Hotkeys.ExtractFile[0])
+			extractCmd := m.getExtractFileCmdForPath(zipFile)
+			require.NotNil(t, extractCmd)
+			extractMsg := ExecuteTeaCmdWithTimeout(extractCmd, DefaultTestTimeout)
+			require.NotNil(t, extractMsg)
+			TeaUpdate(m, extractMsg)
 			// File extraction is supposedly async. So function's return doesn't means its done.
 			extractedDir := filepath.Join(tt.startDir, tt.extractedDirName)
 
@@ -251,7 +254,8 @@ func TestPasteItem(t *testing.T) {
 			originalPath := getOriginalPath(tt.selectMode, tt.itemName, tt.startDir)
 
 			// Perform paste operation
-			p.SendKey(common.Hotkeys.PasteItems[0])
+			p.SendKey("p")
+			p.SendKey("p")
 
 			// Verify results based on whether paste should be prevented
 			if tt.shouldPreventPaste {
@@ -295,7 +299,8 @@ func TestPasteItem(t *testing.T) {
 		require.NoError(t, err)
 
 		// Attempt to paste (should do nothing)
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		// Should not crash and no new files should be created
 		entriesAfter, err := os.ReadDir(emptyTestDir)
@@ -319,7 +324,8 @@ func TestPasteItem(t *testing.T) {
 		navigateToTargetDir(t, m, sourceDir, destDir)
 
 		// Paste items
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		// Verify both files were copied
 		expectedDestFiles := []string{"multi1.txt", "multi2.txt"}
@@ -339,7 +345,8 @@ func TestPasteItem(t *testing.T) {
 
 		// Navigate into the subdirectory and try to paste there (should be prevented)
 		navigateToTargetDir(t, m, sourceDir, testSubDir)
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		// Directory should still exist in original location after prevention
 		assert.DirExists(t, testSubDir, "Directory should still exist after failed paste into subdirectory")
@@ -354,13 +361,15 @@ func TestPasteItem(t *testing.T) {
 		p := NewTestTeaProgWithEventLoop(t, m)
 		// Navigate to destination and paste
 		navigateToTargetDir(t, m, sourceDir, destDir)
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		// Verify first copy
 		verifyDestinationFiles(t, destDir, []string{"duplicate.txt"})
 
 		// Paste again to test duplicate handling
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		// Verify duplicate file with different name
 		verifyDestinationFiles(t, destDir, []string{"duplicate(1).txt"})

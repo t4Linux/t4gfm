@@ -496,7 +496,6 @@ func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 	var cmd tea.Cmd
-	cdOnQuit := common.Config.CdOnQuit
 	switch {
 	case m.typingModal.open:
 		cmd = m.typingModalOpenKey(key)
@@ -536,7 +535,6 @@ func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 
 	case slices.Contains(common.Hotkeys.CdQuit, key):
 		m.modelQuitState = quitInitiated
-		cdOnQuit = true
 
 	default:
 		// Handles general kinds of inputs in the regular state of the application
@@ -555,7 +553,7 @@ func (m *model) handleKeyInput(msg tea.KeyMsg) tea.Cmd {
 		m.modelQuitState = quitConfirmationReceived
 	}
 	if m.modelQuitState == quitConfirmationReceived {
-		m.quitSuperfile(cdOnQuit)
+		m.quitSuperfile()
 		return tea.Quit
 	}
 	return cmd
@@ -823,7 +821,7 @@ func (m *model) mainComponentsRender() string {
 	return lipgloss.JoinVertical(0, mainPanel, footer)
 }
 
-func (m *model) quitSuperfile(cdOnQuit bool) {
+func (m *model) quitSuperfile() {
 	// Resource cleanup
 	if common.Config.Metadata && et != nil {
 		_ = et.Close()
@@ -835,13 +833,11 @@ func (m *model) quitSuperfile(cdOnQuit bool) {
 	currentDir := m.getFocusedFilePanel().Location
 	variable.SetLastDir(currentDir)
 
-	if cdOnQuit {
-		// escape single quote
-		currentDir = strings.ReplaceAll(currentDir, "'", "'\\''")
-		err := os.WriteFile(variable.LastDirFile, []byte("cd '"+currentDir+"'"), utils.ConfigFilePerm)
-		if err != nil {
-			slog.Error("Error during writing lastdir file", "error", err)
-		}
+	// escape single quote
+	currentDir = strings.ReplaceAll(currentDir, "'", "'\\''")
+	err := os.WriteFile(variable.LastDirFile, []byte("cd '"+currentDir+"'"), utils.ConfigFilePerm)
+	if err != nil {
+		slog.Error("Error during writing lastdir file", "error", err)
 	}
 	m.modelQuitState = quitDone
 	slog.Debug("Quitting t4gfm", "current dir", currentDir)

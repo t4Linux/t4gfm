@@ -145,11 +145,20 @@ func TestQuit(t *testing.T) {
 	// 3 - Cd on quit test that LastDir is written on
 
 	t.Run("Normal Quit", func(t *testing.T) {
+		lastDirFile := filepath.Join(variable.AppStateDir, "lastdir")
+		require.NoError(t, os.MkdirAll(filepath.Dir(lastDirFile), 0o755))
+		_ = os.Remove(lastDirFile)
+
 		m := defaultTestModel(testDir)
 		assert.Equal(t, notQuitting, m.modelQuitState)
 		cmd := TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.Quit[0]))
 		assert.Equal(t, quitDone, m.modelQuitState)
 		assert.True(t, IsTeaQuit(cmd))
+
+		data, err := os.ReadFile(lastDirFile)
+		require.NoError(t, err)
+		assert.Equal(t, "cd '"+testDir+"'", string(data), "LastDir file should contain the tempDir path")
+		require.NoError(t, os.Remove(lastDirFile))
 	})
 	t.Run("Quit with running process", func(t *testing.T) {
 		m := defaultTestModel(testDir)

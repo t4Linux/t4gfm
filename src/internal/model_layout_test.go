@@ -244,17 +244,19 @@ func testModelScrolling(t *testing.T, p *TeaProg) {
 	p.m.fileMetaData.SetMetadata(metadata.NewMetadata(dummyData, "", ""), true)
 
 	panels := []struct {
-		name     string
-		focusKey string
+		name      string
+		focusKeys []string
 	}{
-		{"Sidebar", common.Hotkeys.FocusOnSidebar[0]},
-		{"ProcessBar", common.Hotkeys.FocusOnProcessBar[0]},
-		{"Metadata", common.Hotkeys.FocusOnMetaData[0]},
+		{"Sidebar", []string{"s", "p"}},
+		{"ProcessBar", []string{"s", "s"}},
+		{"Metadata", []string{"s", "m"}},
 	}
 
 	for _, panel := range panels {
 		t.Run(panel.name+"Scrolling", func(t *testing.T) {
-			p.SendKeyDirectly(panel.focusKey)
+			for _, key := range panel.focusKeys {
+				p.SendKeyDirectly(key)
+			}
 			// TODO: Add validation that we are actually at sidebar
 			testModelScrollingCore(t, p)
 		})

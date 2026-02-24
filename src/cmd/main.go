@@ -73,7 +73,7 @@ func Run(content embed.FS) {
 					&cli.BoolFlag{
 						Name:    "lastdir-file",
 						Aliases: []string{"ld"},
-						Usage:   "Print path to lastdir file (Where last dir is written when cd_on_quit config is true)",
+						Usage:   "Print path to lastdir file (where the last focused directory is written on quit)",
 						Value:   false,
 					},
 				},

@@ -50,7 +50,8 @@ func TestCopy(t *testing.T) {
 		assert.Equal(t, file1, p.getModel().clipboard.GetFirstItem())
 
 		p.getModel().updateCurrentFilePanelDir("../dir2")
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 
 		assert.Eventually(t, func() bool {
 			_, err := os.Lstat(filepath.Join(dir2, "file1.txt"))
@@ -60,7 +61,8 @@ func TestCopy(t *testing.T) {
 		assert.False(t, p.getModel().clipboard.IsCut())
 		assert.Equal(t, file1, p.getModel().clipboard.GetFirstItem())
 
-		p.SendKey(common.Hotkeys.PasteItems[0])
+		p.SendKey("p")
+		p.SendKey("p")
 		assert.Eventually(t, func() bool {
 			_, err := os.Lstat(filepath.Join(dir2, "file1(1).txt"))
 			return err == nil

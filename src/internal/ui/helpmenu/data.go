@@ -36,7 +36,7 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 		},
 		{
 			hotkey:         common.Hotkeys.CdQuit,
-			description:    "Quit gfm and change directory to current folder",
+			description:    "Alias for quit (last focused directory is exported on exit)",
 			hotkeyWorkType: globalType,
 		},
 		{

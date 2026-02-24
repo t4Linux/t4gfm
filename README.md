@@ -63,17 +63,19 @@ sudo mv ./bin/gfm /usr/local/bin/gfm
 | Action | Keys |
 |---|---|
 | Confirm/open | `enter`, `right`, `l` |
-| Quit | `q` |
-| CD and quit | `Q` |
+| Quit (exports last directory for shell wrapper) | `q`, `Q` |
 | Move up/down | `up`/`k`, `down`/`j` |
 | Page up/down | `ctrl+b`/`pgup`, `ctrl+f`/`pgdown` |
 | Close/create panel | `w`, `n` |
 | Next/previous panel | `tab`, `shift+left`/`H` |
+| Pin current directory | `P` |
+| Open sort options menu | `O` |
 | Toggle preview panel | `f` |
 | Toggle reverse sort | `ctrl+r` |
 | Move pinned entry | `K`/`shift+k` up, `J`/`shift+j` down |
 | Create/rename item | `a`, `r` |
 | Copy/cut/paste | `y`, `x` |
+| Two-panel transfer | `C` (copy to other panel), `M` (move to other panel) |
 | Delete/trash | `delete` |
 | Permanent delete | `D` |
 | Open dir/file with editor | `E`, `R`/`e` |
