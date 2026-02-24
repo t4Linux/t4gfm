@@ -80,6 +80,7 @@ type model struct {
 	easterEggQCnt        int
 	rangerPrefix         string
 	rangerMarks          map[string]string
+	previousLocations    map[int]string
 	lastPaneTitle        string
 	compactFooter        bool
 	compressLevel        string

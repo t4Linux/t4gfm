@@ -73,6 +73,17 @@ func (m *model) parentDirectoryFromSymlinkSource() {
 	}
 }
 
+func (m *model) jumpToPreviousLocation() {
+	idx := m.fileModel.FocusedPanelIndex
+	previousPath := strings.TrimSpace(m.previousLocations[idx])
+	if previousPath == "" {
+		return
+	}
+	if err := m.updateCurrentFilePanelDir(previousPath); err != nil {
+		slog.Error("Error while changing to previous location", "error", err, "target", previousPath)
+	}
+}
+
 // Enter directory or open file with default application
 // TODO: Unit test this
 func (m *model) enterPanel() tea.Cmd {

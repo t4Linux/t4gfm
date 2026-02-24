@@ -285,3 +285,21 @@ func TestCursorRemembersParentPosition(t *testing.T) {
 		})
 	}
 }
+
+func TestBackspaceJumpsToPreviousLocation(t *testing.T) {
+	curTestDir := t.TempDir()
+	dirA := filepath.Join(curTestDir, "dirA")
+	dirB := filepath.Join(curTestDir, "dirB")
+	utils.SetupDirectories(t, dirA, dirB)
+
+	m := defaultTestModel(curTestDir)
+	require.NoError(t, m.updateCurrentFilePanelDir(dirA))
+	require.NoError(t, m.updateCurrentFilePanelDir(dirB))
+	assert.Equal(t, dirB, m.getFocusedFilePanel().Location)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("backspace"))
+	assert.Equal(t, dirA, m.getFocusedFilePanel().Location)
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("backspace"))
+	assert.Equal(t, dirB, m.getFocusedFilePanel().Location)
+}

@@ -327,7 +327,11 @@ func (m *model) normalAndBrowserModeKey(msg string) tea.Cmd {
 	case msg == "shift+left":
 		m.parentDirectoryFromSymlinkSource()
 	case slices.Contains(common.Hotkeys.ParentDirectory, msg):
-		m.parentDirectory()
+		if msg == "backspace" {
+			m.jumpToPreviousLocation()
+		} else {
+			m.parentDirectory()
+		}
 	case slices.Contains(common.Hotkeys.DeleteItems, msg):
 		return m.getDeleteTriggerCmd(false)
 	case slices.Contains(common.Hotkeys.PermanentlyDeleteItems, msg):

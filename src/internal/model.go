@@ -677,8 +677,12 @@ func (m *model) createNewFilePanelRelativeToCurrent(path string) (tea.Cmd, error
 // simulates a 'cd' action
 func (m *model) updateCurrentFilePanelDir(path string) error {
 	panel := m.getFocusedFilePanel()
+	previousLocation := panel.Location
 	err := panel.UpdateCurrentFilePanelDir(path)
 	if err == nil {
+		if panel.Location != previousLocation && strings.TrimSpace(previousLocation) != "" {
+			m.previousLocations[m.fileModel.FocusedPanelIndex] = previousLocation
+		}
 		// Track the directory change with zoxide
 		m.trackDirectoryWithZoxide(panel.Location)
 		m.savePanelSessionState()
