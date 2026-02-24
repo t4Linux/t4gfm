@@ -71,17 +71,14 @@ sudo mv ./bin/gfm /usr/local/bin/gfm
 | Next/previous panel | `tab`, `shift+left`/`H` |
 | Toggle preview panel | `f` |
 | Toggle reverse sort | `ctrl+r` |
-| Focus metadata/process/sidebar/git | `ctrl+m`, `ctrl+s`, `ctrl+l`, `ctrl+g` |
-| Jump sidebar sections | `ctrl+p` (Pinned), `ctrl+d` (Disks) |
 | Move pinned entry | `K`/`shift+k` up, `J`/`shift+j` down |
 | Create/rename item | `a`, `r` |
-| Copy/cut/paste | `y`, `x`, `ctrl+v` |
+| Copy/cut/paste | `y`, `x` |
 | Delete/trash | `delete` |
 | Permanent delete | `D` |
-| Extract archive | `ctrl+e` |
 | Open dir/file with editor | `E`, `R`/`e` |
 | Toggle select mode | `space`, `v` |
-| Copy path / cwd | `Y`, `c` |
+| Copy path | `Y` |
 | Command line / prompt / zoxide | `:`, `>`, `Z` |
 | Help | `?` |
 | Toggle dotfiles/sidebar/footer | `.`, `b`, `F` |
@@ -99,7 +96,7 @@ sudo mv ./bin/gfm /usr/local/bin/gfm
 |---|---|---|
 | Normal | Parent directory | `h`, `left` |
 | Normal | Previous location (`cd -` style) | `backspace` |
-| Normal | Search bar | `/`, `N` |
+| Normal | Search bar | `/` |
 | Selection | Expand selection down/up | `shift+down`/`J`, `shift+up`/`K` |
 | Selection | Select all | `A` |
 
@@ -132,4 +129,4 @@ Press prefix key first, then second key(s):
 ### Panel-specific Extras
 
 - Git panel tabs: `H` and `L`
-- File preview scrolling: `Shift+J`, `Shift+K`, `ctrl+d`, `ctrl+u`
+- File preview scrolling: `Shift+J`, `Shift+K`

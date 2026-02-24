@@ -21,12 +21,12 @@ Source: `src/t4gfm_config/hotkeys.toml`
 | previous_file_panel | `shift+left` | `H` |
 | toggle_file_preview_panel | `f` | - |
 | toggle_reverse_sort | `ctrl+r` | - |
-| focus_on_metadata | `ctrl+m` | - |
-| focus_on_process_bar | `ctrl+s` | - |
-| focus_on_sidebar | `ctrl+l` | - |
-| focus_on_git | `ctrl+g` | - |
-| jump_to_pinned | `ctrl+p` | - |
-| jump_to_disks | `ctrl+d` | - |
+| focus_on_metadata | - | - |
+| focus_on_process_bar | - | - |
+| focus_on_sidebar | - | - |
+| focus_on_git | - | - |
+| jump_to_pinned | - | - |
+| jump_to_disks | - | - |
 | git_panel_switch_tab | `H` | `L` (Git panel active) |
 | move_pinned_item_up | `K` | `shift+k` |
 | move_pinned_item_down | `J` | `shift+j` |
@@ -37,15 +37,15 @@ Source: `src/t4gfm_config/hotkeys.toml`
 | move_to_other_panel | `M` | (2 panels) |
 | cut_items | `x` | - |
 | delete_items | `delete` | - |
-| paste_items | `ctrl+v` | - |
+| paste_items | - | - |
 | permanently_delete_items | `D` | - |
-| compress_file | `ctrl+a` | - |
-| extract_file | `ctrl+e` | - |
+| compress_file | - | - |
+| extract_file | - | - |
 | open_current_directory_with_editor | `E` | - |
 | open_file_with_editor | `R` | `e` |
 | change_panel_mode | `space` | `v` |
 | copy_path | `Y` | - |
-| copy_present_working_directory | `c` | - |
+| copy_present_working_directory | - | - |
 | open_command_line | `:` | - |
 | open_help_menu | `?` | - |
 | open_t4gfm_prompt | `>` | - |
@@ -68,7 +68,7 @@ Source: `src/t4gfm_config/hotkeys.toml`
 | Action | Primary | Secondary |
 |---|---|---|
 | parent_directory | `h` | `left` / `backspace` |
-| search_bar | `/` | `N` |
+| search_bar | `/` | - |
 
 ### Selection mode
 

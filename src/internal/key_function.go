@@ -81,16 +81,6 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 			return m.fileModel.GetFilePreviewCmd(true)
 		}
 
-	case m.focusPanel == nonePanelFocus && msg == "ctrl+d" && m.fileModel.FilePreview.IsOpen():
-		if m.fileModel.FilePreview.ScrollTextPageDown() {
-			return m.fileModel.GetFilePreviewCmd(true)
-		}
-
-	case m.focusPanel == nonePanelFocus && msg == "ctrl+u" && m.fileModel.FilePreview.IsOpen():
-		if m.fileModel.FilePreview.ScrollTextPageUp() {
-			return m.fileModel.GetFilePreviewCmd(true)
-		}
-
 	case slices.Contains(common.Hotkeys.PageUp, msg):
 		m.getFocusedFilePanel().PgUp()
 
@@ -145,24 +135,6 @@ func (m *model) mainKey(msg string) tea.Cmd { //nolint: gocyclo,cyclop,funlen //
 		cmd := m.fileModel.ToggleFilePreviewPanel()
 		m.persistUIState()
 		return cmd
-
-	case slices.Contains(common.Hotkeys.FocusOnSidebar, msg):
-		m.focusOnSideBar()
-
-	case slices.Contains(common.Hotkeys.FocusOnProcessBar, msg):
-		m.focusOnProcessBar()
-
-	case slices.Contains(common.Hotkeys.FocusOnMetaData, msg):
-		m.focusOnMetadata()
-
-	case slices.Contains(common.Hotkeys.FocusOnGit, msg):
-		m.focusOnGit()
-
-	case slices.Contains(common.Hotkeys.JumpToPinned, msg):
-		m.jumpToSidebarSectionPinned()
-
-	case slices.Contains(common.Hotkeys.JumpToDisks, msg):
-		m.jumpToSidebarSectionDisks()
 
 	case slices.Contains(common.Hotkeys.PasteItems, msg):
 		return m.getPasteItemCmd()

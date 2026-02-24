@@ -35,12 +35,12 @@ toggle_file_preview_panel = ['f', '']
 toggle_reverse_sort = ['ctrl+r', '']
 
 #-- Focus Manipulation
-focus_on_metadata = ['ctrl+m', '']
-focus_on_process_bar = ['ctrl+s', '']
-focus_on_sidebar = ['ctrl+l', '']
-focus_on_git = ['ctrl+g', '']
-jump_to_pinned = ['ctrl+p', '']
-jump_to_disks = ['ctrl+d', '']
+focus_on_metadata = ['', '']
+focus_on_process_bar = ['', '']
+focus_on_sidebar = ['', '']
+focus_on_git = ['', '']
+jump_to_pinned = ['', '']
+jump_to_disks = ['', '']
 move_pinned_item_up = ['K', 'shift+k']
 move_pinned_item_down = ['J', 'shift+j']
 
@@ -52,12 +52,12 @@ file_panel_item_rename = ['r', '']
 copy_items = ['y', '']
 cut_items = ['x', '']
 delete_items = ['delete', '']
-paste_items = ['ctrl+v', '']
+paste_items = ['', '']
 permanently_delete_items = ['D', '']
 
 #-- Archive Manipulation
 compress_file = ['', '']
-extract_file = ['ctrl+e', '']
+extract_file = ['', '']
 
 #-- Editor Actions
 open_current_directory_with_editor = ['E', '']
@@ -66,7 +66,7 @@ open_file_with_editor = ['R', 'e']
 #-- Other Actions
 change_panel_mode = ['space', 'v']
 copy_path = ['Y', '']
-copy_present_working_directory = ['c', '']
+copy_present_working_directory = ['', '']
 open_command_line = [':', '']
 open_help_menu = ['?', '']
 open_t4gfm_prompt = ['>', '']
@@ -93,7 +93,7 @@ cancel_typing = ['ctrl+c', 'esc']
 
 #-- Normal Mode Actions
 parent_directory = ['h', 'left', 'backspace']
-search_bar = ['/', 'N']
+search_bar = ['/', '']
 
 #-- Selection Mode Actions
 file_panel_select_mode_items_select_down = ['shift+down', 'J']
