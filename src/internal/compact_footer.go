@@ -1,8 +1,7 @@
 package internal
 
 import (
-	"os"
-	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,42 +15,37 @@ func (m *model) compactFooterLine() string {
 	left := m.compactSelectionInfo()
 	center := m.compactGitInfo()
 	right := m.compactRightInfo()
+	if m.shouldHideCompactRightInfo() {
+		right = center
+		center = ""
+	}
 	line := mergeFooterLine(m.fullWidth, left, center, right)
 	return common.FooterStyle.Width(m.fullWidth).Render(line)
+}
+
+func (m *model) shouldHideCompactRightInfo() bool {
+	panel := m.getFocusedFilePanel()
+	if panel.EmptyOrInvalid() {
+		return false
+	}
+	return panel.IsFocusedNameTruncated()
 }
 
 func (m *model) compactSelectionInfo() string {
 	panel := m.getFocusedFilePanel()
 	if panel.EmptyOrInvalid() {
-		return "---------- - - -"
+		return "- ---------- - -"
 	}
 	item := panel.GetFocusedItem()
+	name := item.Name
+	if strings.TrimSpace(name) == "" {
+		name = filepath.Base(item.Location)
+	}
+	if strings.TrimSpace(name) == "" {
+		name = "-"
+	}
 	perm := item.Info.Mode().String()
-	owner, group := ownerGroup(item.Info)
-	sizeOrCount := common.FormatFileSize(item.Info.Size())
-	if item.Directory {
-		if entries, err := os.ReadDir(item.Location); err == nil {
-			sizeOrCount = strconv.Itoa(len(entries))
-		}
-	}
-	date := item.Info.ModTime().Format("06-01-02 15:04")
-	return perm + " " + owner + " " + group + " " + sizeOrCount + " " + date
-}
-
-func ownerGroup(info os.FileInfo) (string, string) {
-	owner := "-"
-	group := "-"
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		uid := strconv.FormatUint(uint64(stat.Uid), 10)
-		gid := strconv.FormatUint(uint64(stat.Gid), 10)
-		if userData, err := user.LookupId(uid); err == nil {
-			owner = userData.Username
-		}
-		if groupData, err := user.LookupGroupId(gid); err == nil {
-			group = groupData.Name
-		}
-	}
-	return owner, group
+	return name + " " + perm
 }
 
 func (m *model) compactGitInfo() string {
@@ -63,22 +57,12 @@ func (m *model) compactGitInfo() string {
 		branch = "detached"
 	}
 	status := compactGitStatus(m.gitPanel.Status())
-	date := strings.TrimSpace(m.gitPanel.Date())
-	if len(date) >= 10 {
-		date = date[:10]
-		if len(date) == 10 {
-			date = date[2:]
-		}
-	}
 	commit := strings.TrimSpace(m.gitPanel.Subject())
 	if commit == "" {
 		commit = "-"
 	}
 	commit = ansi.Truncate(commit, 36, "...")
 	parts := []string{"(git: " + branch + ")", status}
-	if date != "" {
-		parts = append(parts, date)
-	}
 	parts = append(parts, commit)
 	return strings.Join(parts, " ")
 }
@@ -153,13 +137,21 @@ func mergeFooterLine(width int, left string, center string, right string) string
 	}
 	line := []rune(strings.Repeat(" ", width))
 	left = string([]rune(ansi.Truncate(left, width, "...")))
+	leftRunes := []rune(left)
 	for i, r := range []rune(left) {
 		if i >= len(line) {
 			break
 		}
 		line[i] = r
 	}
-	right = string([]rune(ansi.Truncate(right, width, "...")))
+
+	rightFullRunes := []rune(right)
+	maxRightWidth := width - len(leftRunes) - 1
+	if maxRightWidth <= 0 || len(rightFullRunes) > maxRightWidth {
+		right = ""
+	} else {
+		right = string([]rune(ansi.Truncate(right, maxRightWidth, "...")))
+	}
 	rightRunes := []rune(right)
 	if len(rightRunes) > 0 {
 		start := width - len(rightRunes)
@@ -178,11 +170,16 @@ func mergeFooterLine(width int, left string, center string, right string) string
 	if center == "" {
 		return string(line)
 	}
-	center = string([]rune(ansi.Truncate(center, width, "...")))
+
+	availableCenterWidth := width - len(leftRunes) - len(rightRunes) - 2
+	if availableCenterWidth <= 0 {
+		return string(line)
+	}
+	center = string([]rune(ansi.Truncate(center, availableCenterWidth, "...")))
 	centerRunes := []rune(center)
 	start := (width - len(centerRunes)) / 2
-	if start < len([]rune(left))+1 {
-		start = len([]rune(left)) + 1
+	if start < len(leftRunes)+1 {
+		start = len(leftRunes) + 1
 	}
 	rightStart := width - len(rightRunes)
 	if rightStart < 0 {

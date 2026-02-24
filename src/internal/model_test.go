@@ -302,6 +302,31 @@ func TestEditorFinishedMsgReenablesMouse(t *testing.T) {
 	assert.NotNil(t, cmd)
 }
 
+func TestCompactFooterHidesDiskInfoWhenFocusedNameTruncated(t *testing.T) {
+	curTestDir := t.TempDir()
+	longName := strings.Repeat("a", 120) + ".txt"
+	utils.SetupFilesWithData(t, []byte("x"), filepath.Join(curTestDir, longName))
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, tea.WindowSizeMsg{Width: 70, Height: DefaultTestModelHeight})
+	m.fullWidth = 70
+
+	line := ansi.Strip(m.compactFooterLine())
+	assert.NotContains(t, line, "% free")
+}
+
+func TestCompactFooterShowsDiskInfoWhenFocusedNameFits(t *testing.T) {
+	curTestDir := t.TempDir()
+	utils.SetupFilesWithData(t, []byte("x"), filepath.Join(curTestDir, "fit.txt"))
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, tea.WindowSizeMsg{Width: 150, Height: DefaultTestModelHeight})
+	m.fullWidth = 150
+
+	line := ansi.Strip(m.compactFooterLine())
+	assert.Contains(t, line, "% free")
+}
+
 func eventuallyEnsurePreviewContent(t *testing.T, m *model, content string, msgAndArgs ...any) {
 	contains := false
 	assert.Eventually(t, func() bool {
