@@ -55,3 +55,81 @@ sudo mv ./bin/gfm /usr/local/bin/gfm
 
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - Release notes: [RELEASE_NOTES_v0.1.0.md](./RELEASE_NOTES_v0.1.0.md)
+
+## Full Keyboard Shortcuts
+
+### Global
+
+| Action | Keys |
+|---|---|
+| Confirm/open | `enter`, `right`, `l` |
+| Quit | `q` |
+| CD and quit | `Q` |
+| Move up/down | `up`/`k`, `down`/`j` |
+| Page up/down | `ctrl+b`/`pgup`, `ctrl+f`/`pgdown` |
+| Close/create panel | `w`, `n` |
+| Next/previous panel | `tab`, `shift+left`/`H` |
+| Toggle preview panel | `f` |
+| Toggle reverse sort | `ctrl+r` |
+| Focus metadata/process/sidebar/git | `ctrl+m`, `ctrl+s`, `ctrl+l`, `ctrl+g` |
+| Jump sidebar sections | `ctrl+p` (Pinned), `ctrl+d` (Disks) |
+| Move pinned entry | `K`/`shift+k` up, `J`/`shift+j` down |
+| Create/rename item | `a`, `r` |
+| Copy/cut/paste | `y`, `x`, `ctrl+v` |
+| Delete/trash | `delete` |
+| Permanent delete | `D` |
+| Extract archive | `ctrl+e` |
+| Open dir/file with editor | `E`, `R`/`e` |
+| Toggle select mode | `space`, `v` |
+| Copy path / cwd | `Y`, `c` |
+| Command line / prompt / zoxide | `:`, `>`, `Z` |
+| Help | `?` |
+| Toggle dotfiles/sidebar/footer | `.`, `b`, `F` |
+
+### Typing Mode
+
+| Action | Keys |
+|---|---|
+| Confirm typing | `enter` |
+| Cancel typing | `ctrl+c`, `esc` |
+
+### Mode-specific
+
+| Mode | Action | Keys |
+|---|---|---|
+| Normal | Parent directory | `h`, `left` |
+| Normal | Previous location (`cd -` style) | `backspace` |
+| Normal | Search bar | `/`, `N` |
+| Selection | Expand selection down/up | `shift+down`/`J`, `shift+up`/`K` |
+| Selection | Select all | `A` |
+
+### Ranger-style Prefix Menus
+
+Press prefix key first, then second key(s):
+
+- `y` copy submenu: `yy`, `yp`, `yd`, `yn`, `y.`
+- `d` cut/delete submenu: `dd`, `dT`, `dD`, `du`
+- `p` paste submenu: `pp`, `po`, `pP`, `pO`, `pl`, `pL`, `phl`, `pht`
+- `g` go submenu: `gg`, `gh`, `gl`, `g/`, `gp`, `ge`, `gu`, `gd`, `go`, `gv`, `gm`, `gM`, `gs`
+- `o` sort submenu: `or`, `on`, `os`, `om`, `ot`, `oN`, `oS`, `oM`, `oT`
+- `z` toggle/search submenu: `zh`, `zf`
+- `s` focus/jump submenu: `ss`, `sm`, `sa`, `sg`, `sp`, `sd`, `sf`
+- `m` save mark submenu: `mxy` (two-letter mark key)
+- `;` marks submenu: `;?`, `;xy`, `;dxy`, `;D`
+- `c` compress submenu:
+  - `cz` `.zip`
+  - `ct` `.tar.gz`
+  - `cj` `.tar.xz`
+  - `cl` `.tar.zst`
+  - `cE` encrypted `.tar.gz.gpg` (passphrase prompt)
+  - `cs` cycle compression level
+  - `cv` toggle verbose tar mode
+  - `ce` toggle common excludes
+- `+`/`-` chmod submenu:
+  - quick: `+r/+w/+x/+X/+s/+t` and `-r/-w/-x/-X/-s/-t`
+  - class-first: `+u/+g/+o/+a` then `r/w/x/X/s/t` (same for `-`)
+
+### Panel-specific Extras
+
+- Git panel tabs: `H` and `L`
+- File preview scrolling: `Shift+J`, `Shift+K`, `ctrl+d`, `ctrl+u`
