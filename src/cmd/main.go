@@ -122,6 +122,12 @@ func Run(content embed.FS) {
 				Usage:   "On trying to open any file, gfm will write its path to this file, and exit",
 				Value:   "", // Default to the blank string indicating non-usage of flag
 			},
+			&cli.StringFlag{
+				Name:    "theme",
+				Aliases: []string{"t"},
+				Usage:   "Override theme for this run only (for example gruvbox or gruvbox-dark-hard)",
+				Value:   "",
+			},
 		},
 		Action: appAction,
 	}

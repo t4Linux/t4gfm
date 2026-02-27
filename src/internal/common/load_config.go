@@ -50,6 +50,10 @@ func LoadConfigFile() {
 		// If config is incorrect we cannot continue. We need to exit
 		utils.PrintlnAndExit(err.Error())
 	}
+
+	if variable.ThemeOverride != "" {
+		Config.Theme = variable.ThemeOverride
+	}
 }
 
 func ValidateConfig(c *ConfigType) error {

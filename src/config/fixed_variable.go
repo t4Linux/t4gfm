@@ -79,6 +79,7 @@ var (
 	FixConfigFile = false
 	LastDir       = ""
 	PrintLastDir  = false
+	ThemeOverride = ""
 )
 
 // Still we are preventing other packages to directly modify them via reassign linter
@@ -118,4 +119,5 @@ func UpdateVarFromCliArgs(c *cli.Command) {
 	FixHotkeys = c.Bool("fix-hotkeys")
 	FixConfigFile = c.Bool("fix-config-file")
 	PrintLastDir = c.Bool("print-last-dir")
+	ThemeOverride = c.String("theme")
 }

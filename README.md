@@ -56,6 +56,33 @@ sudo mv ./bin/gfm /usr/local/bin/gfm
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - Release notes: [RELEASE_NOTES_v0.1.0.md](./RELEASE_NOTES_v0.1.0.md)
 
+## Shell Integration (cd on quit)
+
+To make terminal directory follow the last focused directory after quit, load the shell wrapper.
+
+```bash
+source /path/to/t4gfm/cd_on_quit/cd_on_quit.sh
+```
+
+Fish:
+
+```fish
+source /path/to/t4gfm/cd_on_quit/cd_on_quit.fish
+```
+
+## Theme Switching
+
+- One-off run with theme override: `gfm --theme gruvbox-dark-hard`
+- Back to default theme for one run: `gfm --theme catppuccin-mocha`
+- Optional toggle helpers (bash/zsh):
+
+```bash
+source /path/to/t4gfm/cd_on_quit/theme_toggle.sh
+gfm_toggle      # switches between default and gruvbox-dark-hard
+gfm_default     # force default
+gfm_gruvbox     # force gruvbox-dark-hard
+```
+
 ## Full Keyboard Shortcuts
 
 ### Global

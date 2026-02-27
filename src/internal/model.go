@@ -831,11 +831,16 @@ func (m *model) quitSuperfile() {
 
 	// cd on quit
 	currentDir := m.getFocusedFilePanel().Location
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = variable.HomeDir
+	}
+	currentDir = utils.ResolveAbsPath(wd, currentDir)
 	variable.SetLastDir(currentDir)
 
 	// escape single quote
 	currentDir = strings.ReplaceAll(currentDir, "'", "'\\''")
-	err := os.WriteFile(variable.LastDirFile, []byte("cd '"+currentDir+"'"), utils.ConfigFilePerm)
+	err = os.WriteFile(variable.LastDirFile, []byte("cd '"+currentDir+"'"), utils.ConfigFilePerm)
 	if err != nil {
 		slog.Error("Error during writing lastdir file", "error", err)
 	}

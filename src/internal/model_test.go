@@ -214,6 +214,24 @@ func TestQuit(t *testing.T) {
 		err = os.Remove(lastDirFile)
 		require.NoError(t, err)
 	})
+
+	t.Run("Quit resolves active panel location to absolute path", func(t *testing.T) {
+		lastDirFile := filepath.Join(variable.AppStateDir, "lastdir")
+		require.NoError(t, os.MkdirAll(filepath.Dir(lastDirFile), 0o755))
+		_ = os.Remove(lastDirFile)
+
+		m := defaultTestModel(testDir)
+		m.getFocusedFilePanel().Location = "~/"
+
+		cmd := TeaUpdate(m, utils.TeaRuneKeyMsg(common.Hotkeys.Quit[0]))
+		assert.Equal(t, quitDone, m.modelQuitState)
+		assert.True(t, IsTeaQuit(cmd))
+
+		data, err := os.ReadFile(lastDirFile)
+		require.NoError(t, err)
+		assert.Equal(t, "cd '"+filepath.Clean(variable.HomeDir)+"'", string(data))
+		require.NoError(t, os.Remove(lastDirFile))
+	})
 }
 
 func TestChooserFile(t *testing.T) {
