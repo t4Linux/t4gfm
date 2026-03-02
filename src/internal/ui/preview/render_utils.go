@@ -15,14 +15,19 @@ import (
 
 func getBatSyntaxHighlightedContent(
 	itemPath string,
+	startLine int,
 	previewLine int,
 	background string,
 	batCmd string,
 ) (string, error) {
 	// --plain: use the plain style without line numbers and decorations
 	// --force-colorization: force colorization for non-interactive shell output
-	// --line-range <:m>: only read from line 1 to line "m"
-	batArgs := []string{itemPath, "--plain", "--force-colorization", "--line-range", fmt.Sprintf(":%d", previewLine)}
+	// --line-range <n:m>: read from line n to line m
+	if startLine < 1 {
+		startLine = 1
+	}
+	endLine := startLine + max(0, previewLine-1)
+	batArgs := []string{itemPath, "--plain", "--force-colorization", "--line-range", fmt.Sprintf("%d:%d", startLine, endLine)}
 
 	// set timeout for the external command execution to 500ms max
 	ctx, cancel := context.WithTimeout(context.Background(), common.DefaultPreviewTimeout)

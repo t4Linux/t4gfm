@@ -545,6 +545,112 @@ func TestIsMouseLeftClickUsesReleaseOnly(t *testing.T) {
 	assert.True(t, isMouseLeftClick(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonNone}))
 }
 
+func TestMouseWheelScrollsPreviewOnlyWhenHovered(t *testing.T) {
+	curTestDir := t.TempDir()
+	var b strings.Builder
+	for i := 1; i <= 240; i++ {
+		_, _ = fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	filePath := filepath.Join(curTestDir, "long.txt")
+	utils.SetupFilesWithData(t, []byte(b.String()), filePath)
+
+	m := defaultTestModelWithFilePreview(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	p.Send(tea.WindowSizeMsg{Width: 4 * DefaultTestModelWidth, Height: 4 * DefaultTestModelHeight})
+	eventuallyEnsurePreviewContent(t, m, "line 001", "preview content should be loaded")
+	initialPreview := m.fileModel.FilePreview.GetContent()
+
+	previewX := m.fullWidth - m.fileModel.ExpectedPreviewWidth + 1
+	previewY := 1
+
+	p.Send(tea.MouseMsg{X: previewX, Y: previewY, Button: tea.MouseButtonWheelDown})
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePreview.GetTextScroll() > 0
+	}, DefaultTestTimeout, DefaultTestTick, "scrolling over preview should move preview offset")
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePreview.GetContent() != initialPreview
+	}, DefaultTestTimeout, DefaultTestTick, "scrolling over preview should re-render preview content")
+
+	current := m.fileModel.FilePreview.GetTextScroll()
+	p.Send(tea.MouseMsg{X: 1, Y: 1, Button: tea.MouseButtonWheelDown})
+	time.Sleep(2 * DefaultTestTick)
+	assert.Equal(t, current, m.fileModel.FilePreview.GetTextScroll(),
+		"scrolling outside preview should not change preview offset")
+}
+
+func TestMouseWheelUsesLastMousePositionWhenWheelCoordsMissing(t *testing.T) {
+	curTestDir := t.TempDir()
+	var b strings.Builder
+	for i := 1; i <= 240; i++ {
+		_, _ = fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	filePath := filepath.Join(curTestDir, "long.txt")
+	utils.SetupFilesWithData(t, []byte(b.String()), filePath)
+
+	m := defaultTestModelWithFilePreview(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	p.Send(tea.WindowSizeMsg{Width: 4 * DefaultTestModelWidth, Height: 4 * DefaultTestModelHeight})
+	eventuallyEnsurePreviewContent(t, m, "line 001", "preview content should be loaded")
+
+	previewX := m.fullWidth - m.fileModel.ExpectedPreviewWidth + 1
+	m.lastMouseX = previewX
+	m.lastMouseY = 1
+	m.hasMousePos = true
+	p.Send(tea.MouseMsg{X: -1, Y: -1, Button: tea.MouseButtonWheelDown})
+
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePreview.GetTextScroll() > 0
+	}, DefaultTestTimeout, DefaultTestTick, "wheel events with missing coordinates should use last mouse position")
+}
+
+func TestMouseWheelWithoutCoordinatesFallsBackToPreviewScroll(t *testing.T) {
+	curTestDir := t.TempDir()
+	var b strings.Builder
+	for i := 1; i <= 240; i++ {
+		_, _ = fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	filePath := filepath.Join(curTestDir, "long.txt")
+	utils.SetupFilesWithData(t, []byte(b.String()), filePath)
+
+	m := defaultTestModelWithFilePreview(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	p.Send(tea.WindowSizeMsg{Width: 4 * DefaultTestModelWidth, Height: 4 * DefaultTestModelHeight})
+	eventuallyEnsurePreviewContent(t, m, "line 001", "preview content should be loaded")
+
+	m.hasMousePos = false
+	m.lastMouseX = 0
+	m.lastMouseY = 0
+	p.Send(tea.MouseMsg{X: 0, Y: 0, Button: tea.MouseButtonWheelDown})
+
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePreview.GetTextScroll() > 0
+	}, DefaultTestTimeout, DefaultTestTick, "when coordinates are missing preview should still scroll if it can")
+}
+
+func TestMouseWheelScrollsPreviewWithOneBasedCoordinates(t *testing.T) {
+	curTestDir := t.TempDir()
+	var b strings.Builder
+	for i := 1; i <= 240; i++ {
+		_, _ = fmt.Fprintf(&b, "line %03d\n", i)
+	}
+	filePath := filepath.Join(curTestDir, "long.txt")
+	utils.SetupFilesWithData(t, []byte(b.String()), filePath)
+
+	m := defaultTestModelWithFilePreview(curTestDir)
+	p := NewTestTeaProgWithEventLoop(t, m)
+	p.Send(tea.WindowSizeMsg{Width: 4 * DefaultTestModelWidth, Height: 4 * DefaultTestModelHeight})
+	eventuallyEnsurePreviewContent(t, m, "line 001", "preview content should be loaded")
+
+	// Simulate 1-based terminal coordinates near the top-right preview area.
+	oneBasedX := m.fullWidth
+	oneBasedY := 1
+	p.Send(tea.MouseMsg{X: oneBasedX, Y: oneBasedY, Button: tea.MouseButtonWheelDown})
+
+	assert.Eventually(t, func() bool {
+		return m.fileModel.FilePreview.GetTextScroll() > 0
+	}, DefaultTestTimeout, DefaultTestTick, "preview should scroll with one-based wheel coordinates")
+}
+
 func TestQuestionMarkEasterEggOpensURLOnTripleQuestion(t *testing.T) {
 	curTestDir := t.TempDir()
 	m := defaultTestModel(curTestDir)

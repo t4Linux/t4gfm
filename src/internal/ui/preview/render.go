@@ -202,7 +202,7 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 		}
 		useBat := m.batCmd != "" && common.Config.CodePreviewer == "bat"
 		if useBat {
-			fileContent, err = getBatSyntaxHighlightedContent(itemPath, previewHeight, background, m.batCmd)
+			fileContent, err = getBatSyntaxHighlightedContent(itemPath, m.textScroll+1, previewHeight, background, m.batCmd)
 			if err != nil {
 				fileContent, err = ansichroma.HightlightString(rawContent, format.Config().Name,
 					common.Theme.CodeSyntaxHighlightTheme, background)
@@ -211,7 +211,7 @@ func (m *Model) renderTextPreview(r *rendering.Renderer, itemPath string,
 			fileContent, err = ansichroma.HightlightString(rawContent, format.Config().Name,
 				common.Theme.CodeSyntaxHighlightTheme, background)
 			if err != nil && m.batCmd != "" && common.Config.CodePreviewer == "" {
-				fileContent, err = getBatSyntaxHighlightedContent(itemPath, previewHeight, background, m.batCmd)
+				fileContent, err = getBatSyntaxHighlightedContent(itemPath, m.textScroll+1, previewHeight, background, m.batCmd)
 			}
 		}
 		if err != nil {

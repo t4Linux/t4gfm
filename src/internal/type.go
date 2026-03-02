@@ -105,9 +105,13 @@ type model struct {
 
 	// Height in number of lines of actual viewport of
 	// footer panels - process/metadata/clipboard - excluding border
-	footerHeight int
-	fullWidth    int
-	fullHeight   int
+	footerHeight       int
+	fullWidth          int
+	fullHeight         int
+	lastMouseX         int
+	lastMouseY         int
+	hasMousePos        bool
+	forcePreviewRender bool
 
 	// whether usable trash directory exists or not
 	hasTrash bool

@@ -76,6 +76,14 @@ func (m *Model) ScrollTextPageDown() bool {
 	return m.ScrollTextDown(page)
 }
 
+func (m *Model) CanScrollUp() bool {
+	return m.textScroll > 0
+}
+
+func (m *Model) CanScrollDown() bool {
+	return m.hasMoreText
+}
+
 func (m *Model) SetEmptyWithDimensions(width int, height int) {
 	m.setContent(m.RenderTextWithDimension("", height, width), width, height, "")
 }

@@ -58,6 +58,7 @@ func (m *model) Init() tea.Cmd {
 	m.lastPaneTitle = title
 	return tea.Batch(
 		tea.SetWindowTitle(title),
+		tea.EnableMouseAllMotion,
 		textinput.Blink, // Assuming textinput.Blink is a valid command
 		processCmdToTeaCmd(m.processBarModel.GetListenCmd()),
 		nextClockTickCmd(),
@@ -118,7 +119,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			slog.Error("External process finished with error", "error", msg.err)
 		}
-		inputCmd = tea.EnableMouseCellMotion
+		inputCmd = tea.EnableMouseAllMotion
 	case clockTickMsg:
 		clockCmd = nextClockTickCmd()
 
@@ -135,7 +136,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lastPaneTitle = title
 		windowTitleCmd = tea.SetWindowTitle(title)
 	}
-	filePreviewCmd = m.fileModel.GetFilePreviewCmd(false)
+	filePreviewCmd = m.fileModel.GetFilePreviewCmd(m.forcePreviewRender)
+	m.forcePreviewRender = false
 
 	metadataCmd = m.getMetadataCmd()
 	gitCmd = m.getGitInfoCmd()
@@ -173,19 +175,136 @@ func (m *model) paneTitle() string {
 
 func (m *model) handleMouseMsg(msg tea.MouseMsg) {
 	msgStr := msg.String()
+	rawMissingCoords := msg.X <= 0 || msg.Y <= 0
+	x, y := msg.X, msg.Y
+	isWheel := msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown ||
+		msgStr == "wheel up" || msgStr == "wheel down"
+	if x >= 0 && y >= 0 && (!isWheel || x != 0 || y != 0) {
+		m.lastMouseX = x
+		m.lastMouseY = y
+		m.hasMousePos = true
+	}
 	if msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown {
 		if msg.Button == tea.MouseButtonWheelUp {
-			wheelMainAction("wheel up", m)
+			msgStr = "wheel up"
 		} else {
-			wheelMainAction("wheel down", m)
+			msgStr = "wheel down"
 		}
-	} else if msgStr == "wheel up" || msgStr == "wheel down" {
+	}
+	if msgStr == "wheel up" || msgStr == "wheel down" {
+		slog.Info("Mouse wheel event",
+			"msgStr", msgStr,
+			"rawX", msg.X,
+			"rawY", msg.Y,
+			"rawButton", msg.Button,
+			"x", x,
+			"y", y,
+			"rawMissingCoords", rawMissingCoords,
+			"hasMousePos", m.hasMousePos,
+			"lastMouseX", m.lastMouseX,
+			"lastMouseY", m.lastMouseY,
+			"previewOpen", m.fileModel.FilePreview.IsOpen(),
+			"previewWidth", m.fileModel.ExpectedPreviewWidth,
+			"fullWidth", m.fullWidth,
+			"mainPanelHeight", m.mainPanelHeight,
+		)
+		if m.hasMousePos && (x <= 0 || y <= 0) {
+			x = m.lastMouseX
+			y = m.lastMouseY
+		}
+		hoverPreview := m.isMouseOverPreviewPanel(x, y)
+		slog.Info("Mouse wheel preview hit-test",
+			"msgStr", msgStr,
+			"x", x,
+			"y", y,
+			"hoverPreview", hoverPreview,
+		)
+		if hoverPreview && m.handlePreviewWheelScroll(x, y, msgStr) {
+			slog.Info("Mouse wheel handled by preview hover scroll", "msgStr", msgStr)
+			return
+		}
+		if rawMissingCoords && m.scrollPreviewIfPossible(msgStr) {
+			slog.Info("Mouse wheel handled by preview fallback scroll", "msgStr", msgStr)
+			return
+		}
+		slog.Info("Mouse wheel handled by main list", "msgStr", msgStr, "focusPanel", m.focusPanel)
 		wheelMainAction(msgStr, m)
 	} else if isMouseLeftClick(msg) {
-		m.handleMouseLeftClick(msg.X, msg.Y)
+		m.handleMouseLeftClick(x, y)
 	} else {
 		slog.Debug("Mouse event of type that is not handled", "msg", msgStr)
 	}
+}
+
+func (m *model) handlePreviewWheelScroll(x int, y int, direction string) bool {
+	if !m.isMouseOverPreviewPanel(x, y) {
+		return false
+	}
+
+	changed := false
+	for range common.WheelRunTime {
+		if direction == "wheel up" {
+			changed = m.fileModel.FilePreview.ScrollTextUp(1) || changed
+			continue
+		}
+		changed = m.fileModel.FilePreview.ScrollTextDown(1) || changed
+	}
+	if changed {
+		m.forcePreviewRender = true
+	}
+
+	return true
+}
+
+func (m *model) scrollPreviewIfPossible(direction string) bool {
+	if !m.fileModel.FilePreview.IsOpen() {
+		return false
+	}
+
+	if direction == "wheel up" && !m.fileModel.FilePreview.CanScrollUp() {
+		return false
+	}
+	if direction == "wheel down" && !m.fileModel.FilePreview.CanScrollDown() {
+		return false
+	}
+
+	for range common.WheelRunTime {
+		if direction == "wheel up" {
+			if m.fileModel.FilePreview.ScrollTextUp(1) {
+				m.forcePreviewRender = true
+			}
+			continue
+		}
+		if m.fileModel.FilePreview.ScrollTextDown(1) {
+			m.forcePreviewRender = true
+		}
+	}
+
+	return true
+}
+
+func (m *model) isMouseOverPreviewPanel(x int, y int) bool {
+	if !m.fileModel.FilePreview.IsOpen() || m.fileModel.ExpectedPreviewWidth <= 0 {
+		return false
+	}
+	if x < 0 || y < 0 {
+		return false
+	}
+
+	previewStartCol := m.fullWidth - m.fileModel.ExpectedPreviewWidth
+	mainHeightWithBorder := m.mainPanelHeight + common.BorderPadding
+
+	if x < m.fullWidth && y < mainHeightWithBorder {
+		return x >= previewStartCol
+	}
+
+	// Some terminals/libraries report mouse coordinates as 1-based.
+	x0 := x - 1
+	y0 := y - 1
+	if x0 < 0 || y0 < 0 || x0 >= m.fullWidth || y0 >= mainHeightWithBorder {
+		return false
+	}
+	return x0 >= previewStartCol
 }
 
 func isMouseLeftClick(msg tea.MouseMsg) bool {
