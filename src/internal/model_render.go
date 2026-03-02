@@ -207,7 +207,9 @@ func (m *model) rangerPrefixMenuRender() string {
 			" sg - focus Git panel\n" +
 			" sp - jump to Pinned section\n" +
 			" sd - jump to Disks section\n" +
-			" sf - jump to Files section"
+			" sf - jump to Files section\n" +
+			" s< - narrow focused main panel (2-panel mode)\n" +
+			" s> - widen focused main panel (2-panel mode)"
 	case "m":
 		lines = " m?? - save current location under two-letter key\n" +
 			" example: mca"

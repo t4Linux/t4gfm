@@ -369,6 +369,11 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
+			hotkey:         []string{"s<", "s>"},
+			description:    "Decrease/increase focused main panel width (2-panel mode)",
+			hotkeyWorkType: globalType,
+		},
+		{
 			hotkey:         []string{"or", ""},
 			description:    "Toggle reverse sort",
 			hotkeyWorkType: globalType,

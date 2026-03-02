@@ -192,42 +192,16 @@ func (m *model) handleMouseMsg(msg tea.MouseMsg) {
 		}
 	}
 	if msgStr == "wheel up" || msgStr == "wheel down" {
-		slog.Info("Mouse wheel event",
-			"msgStr", msgStr,
-			"rawX", msg.X,
-			"rawY", msg.Y,
-			"rawButton", msg.Button,
-			"x", x,
-			"y", y,
-			"rawMissingCoords", rawMissingCoords,
-			"hasMousePos", m.hasMousePos,
-			"lastMouseX", m.lastMouseX,
-			"lastMouseY", m.lastMouseY,
-			"previewOpen", m.fileModel.FilePreview.IsOpen(),
-			"previewWidth", m.fileModel.ExpectedPreviewWidth,
-			"fullWidth", m.fullWidth,
-			"mainPanelHeight", m.mainPanelHeight,
-		)
 		if m.hasMousePos && (x <= 0 || y <= 0) {
 			x = m.lastMouseX
 			y = m.lastMouseY
 		}
-		hoverPreview := m.isMouseOverPreviewPanel(x, y)
-		slog.Info("Mouse wheel preview hit-test",
-			"msgStr", msgStr,
-			"x", x,
-			"y", y,
-			"hoverPreview", hoverPreview,
-		)
-		if hoverPreview && m.handlePreviewWheelScroll(x, y, msgStr) {
-			slog.Info("Mouse wheel handled by preview hover scroll", "msgStr", msgStr)
+		if m.isMouseOverPreviewPanel(x, y) && m.handlePreviewWheelScroll(x, y, msgStr) {
 			return
 		}
 		if rawMissingCoords && m.scrollPreviewIfPossible(msgStr) {
-			slog.Info("Mouse wheel handled by preview fallback scroll", "msgStr", msgStr)
 			return
 		}
-		slog.Info("Mouse wheel handled by main list", "msgStr", msgStr, "focusPanel", m.focusPanel)
 		wheelMainAction(msgStr, m)
 	} else if isMouseLeftClick(msg) {
 		m.handleMouseLeftClick(x, y)

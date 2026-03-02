@@ -432,6 +432,10 @@ func (m *model) rangerPrefixKey(msg string) tea.Cmd {
 			m.jumpToSidebarSectionDisks()
 		case "f":
 			m.jumpToSidebarSectionList()
+		case ">":
+			cmd = m.adjustFocusedMainPanelWidth(4)
+		case "<":
+			cmd = m.adjustFocusedMainPanelWidth(-4)
 		}
 	case "m":
 		if isMarkChar(msg) {
@@ -659,6 +663,23 @@ func (m *model) handleSortPrefix(msg string) {
 	case "o":
 		m.sortModal.Open(panel.SortKind)
 	}
+}
+
+func (m *model) adjustFocusedMainPanelWidth(delta int) tea.Cmd {
+	if delta == 0 {
+		return nil
+	}
+	if m.fileModel.PanelCount() != 2 {
+		m.notifyModel = notify.New(true, "Two panels required",
+			"Use split view (2 main panels) to resize focused panel width.",
+			notify.NoAction)
+		return nil
+	}
+
+	if !m.fileModel.AdjustFocusedPanelWidth(delta) {
+		return nil
+	}
+	return m.fileModel.GetFilePreviewCmd(true)
 }
 
 // Check the hotkey to cancel operation or create file

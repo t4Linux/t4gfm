@@ -59,9 +59,45 @@ func (m *Model) updateChildComponentWidth() {
 		}
 		widthForPanels -= m.ExpectedPreviewWidth
 	}
+	if panelCount != 2 {
+		m.TwoPanelSplitOffset = 0
+	}
 
 	panelWidth := widthForPanels / panelCount
 	lastPanelWidth := widthForPanels - (panelCount-1)*panelWidth
+
+	if panelCount == 2 {
+		base := widthForPanels / 2
+		first := base + m.TwoPanelSplitOffset
+		minWidth := filepanel.MinWidth
+		if widthForPanels < 2*minWidth {
+			m.TwoPanelSplitOffset = 0
+			panelWidth = widthForPanels / 2
+			lastPanelWidth = widthForPanels - panelWidth
+			m.SinglePanelWidth = panelWidth
+			m.MaxFilePanel = widthForPanels / filepanel.MinWidth
+			if m.MaxFilePanel > common.FilePanelMax {
+				m.MaxFilePanel = common.FilePanelMax
+			}
+			for i := range panelCount {
+				if i == panelCount-1 {
+					m.FilePanels[i].SetWidth(lastPanelWidth)
+				} else {
+					m.FilePanels[i].SetWidth(panelWidth)
+				}
+			}
+			return
+		}
+		if first < minWidth {
+			first = minWidth
+		}
+		if first > widthForPanels-minWidth {
+			first = widthForPanels - minWidth
+		}
+		m.TwoPanelSplitOffset = first - base
+		panelWidth = first
+		lastPanelWidth = widthForPanels - first
+	}
 
 	for i := range panelCount {
 		if i == panelCount-1 {
@@ -77,6 +113,21 @@ func (m *Model) updateChildComponentWidth() {
 	if m.MaxFilePanel > common.FilePanelMax {
 		m.MaxFilePanel = common.FilePanelMax
 	}
+}
+
+func (m *Model) AdjustFocusedPanelWidth(delta int) bool {
+	if delta == 0 || m.PanelCount() != 2 {
+		return false
+	}
+
+	prev := m.TwoPanelSplitOffset
+	if m.FocusedPanelIndex == 0 {
+		m.TwoPanelSplitOffset += delta
+	} else {
+		m.TwoPanelSplitOffset -= delta
+	}
+	m.updateChildComponentWidth()
+	return prev != m.TwoPanelSplitOffset
 }
 
 func (m *Model) ensurePreviewDimensionsSync() tea.Cmd {

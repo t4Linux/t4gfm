@@ -139,7 +139,8 @@ Press prefix key first, then second key(s):
 - `g` go submenu: `gg`, `gh`, `gl`, `g/`, `gp`, `ge`, `gu`, `gd`, `go`, `gv`, `gm`, `gM`, `gs`
 - `o` sort submenu: `or`, `on`, `os`, `om`, `ot`, `oN`, `oS`, `oM`, `oT`
 - `z` toggle/search submenu: `zh`, `zf`
-- `s` focus/jump submenu: `ss`, `sm`, `sa`, `sg`, `sp`, `sd`, `sf`
+- `s` focus/jump/layout submenu: `ss`, `sm`, `sa`, `sg`, `sp`, `sd`, `sf`, `s<`, `s>`
+  - `s<`/`s>` resize focused main panel width in 2-panel mode
 - `m` save mark submenu: `mxy` (two-letter mark key)
 - `;` marks submenu: `;?`, `;xy`, `;dxy`, `;D`
 - `c` compress submenu:

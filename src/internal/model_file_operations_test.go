@@ -185,6 +185,42 @@ func TestRangerPrefixOperations(t *testing.T) {
 	assert.Equal(t, variable.HomeDir, m.getFocusedFilePanel().Location)
 }
 
+func TestRangerPrefixAdjustFocusedMainPanelWidth(t *testing.T) {
+	curTestDir := t.TempDir()
+	utils.SetupFilesWithData(t, []byte("f1"), filepath.Join(curTestDir, "file1.txt"))
+
+	m := defaultTestModel(curTestDir)
+	TeaUpdate(m, nil)
+	_, err := m.fileModel.CreateNewFilePanel(curTestDir)
+	require.NoError(t, err)
+
+	w0 := m.fileModel.FilePanels[0].GetWidth()
+	w1 := m.fileModel.FilePanels[1].GetWidth()
+
+	TeaUpdate(m, utils.TeaRuneKeyMsg("s"))
+	cmd := TeaUpdate(m, utils.TeaRuneKeyMsg(">"))
+	assert.Greater(t, m.fileModel.FilePanels[1].GetWidth(), w1)
+	assert.Less(t, m.fileModel.FilePanels[0].GetWidth(), w0)
+	assert.NotNil(t, cmd)
+
+	w0 = m.fileModel.FilePanels[0].GetWidth()
+	w1 = m.fileModel.FilePanels[1].GetWidth()
+	TeaUpdate(m, utils.TeaRuneKeyMsg("s"))
+	cmd = TeaUpdate(m, utils.TeaRuneKeyMsg("<"))
+	assert.Less(t, m.fileModel.FilePanels[1].GetWidth(), w1)
+	assert.Greater(t, m.fileModel.FilePanels[0].GetWidth(), w0)
+	assert.NotNil(t, cmd)
+
+	m2 := defaultTestModel(curTestDir)
+	TeaUpdate(m2, nil)
+	TeaUpdate(m2, utils.TeaRuneKeyMsg("s"))
+	TeaUpdate(m2, utils.TeaRuneKeyMsg(">"))
+	assert.True(t, m2.notifyModel.IsOpen())
+	assert.Equal(t, "Two panels required", m2.notifyModel.GetTitle())
+	assert.Equal(t, notify.NoAction, m2.notifyModel.GetConfirmAction())
+	assert.Contains(t, m2.notifyModel.GetContent(), "2 main panels")
+}
+
 func TestRangerTwoLetterMarks(t *testing.T) {
 	curTestDir := t.TempDir()
 	oldMarksFile := variable.RangerMarksFile

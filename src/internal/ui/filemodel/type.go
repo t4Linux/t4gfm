@@ -23,4 +23,5 @@ type Model struct {
 	ioReqCnt             int
 	DisplayDotFiles      bool
 	lastBackgroundSync   time.Time
+	TwoPanelSplitOffset  int
 }
