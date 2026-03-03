@@ -238,7 +238,20 @@ func LoadAllDefaultConfig(content embed.FS) {
 		return
 	}
 
-	if string(currentThemeVersion) == variable.CurrentVersion {
+	themeFilesExist := false
+	if entries, readErr := os.ReadDir(variable.ThemeFolder); readErr == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if filepath.Ext(entry.Name()) == ".toml" {
+				themeFilesExist = true
+				break
+			}
+		}
+	}
+
+	if string(currentThemeVersion) == variable.CurrentVersion && themeFilesExist {
 		// We don't need to update themes as its already up to date
 		return
 	}
