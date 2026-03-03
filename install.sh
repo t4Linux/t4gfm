@@ -5,6 +5,7 @@ REPO_URL="${REPO_URL:-https://github.com/t4Linux/t4gfm.git}"
 BRANCH="${BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 BINARY_NAME="${BINARY_NAME:-gfm}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 if ! command -v git >/dev/null 2>&1; then
   printf "Error: git is required but not installed.\n" >&2
@@ -34,6 +35,11 @@ mkdir -p "$INSTALL_DIR"
 )
 
 printf "Installed: %s\n" "$INSTALL_DIR/$BINARY_NAME"
+
+THEME_DIR="$CONFIG_HOME/t4gfm/theme"
+mkdir -p "$THEME_DIR"
+cp "$tmp_dir/t4gfm/src/t4gfm_config/theme/"*.toml "$THEME_DIR/"
+printf "Installed default themes into: %s\n" "$THEME_DIR"
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*)
